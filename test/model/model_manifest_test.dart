@@ -66,8 +66,39 @@ void main() {
       );
     });
 
-    test('rejects an absent field', () {
-      final json = validJson()..remove('file_url');
+    test('rejects an absent required field', () {
+      for (final key in ['model_id', 'version', 'input', 'labels']) {
+        final json = validJson()..remove(key);
+
+        expect(
+          () => ModelManifest.fromJson(json),
+          throwsA(isA<ManifestFormatException>()),
+          reason: 'removing "$key" must fail',
+        );
+      }
+    });
+
+    test('accepts an asset manifest without the network fields', () {
+      final json = validJson()
+        ..remove('file_url')
+        ..remove('sha256')
+        ..remove('bytes')
+        ..remove('min_app_build');
+
+      final manifest = ModelManifest.fromJson(json);
+
+      expect(manifest.fileUrl, isNull);
+      expect(manifest.sha256, isNull);
+      expect(manifest.bytes, isNull);
+      // A manifest without the field runs on every build.
+      expect(manifest.minAppBuild, 0);
+      expect(manifest.supportsAppBuild(1), isTrue);
+      expect(manifest.input.width, 256);
+      expect(manifest.labels, hasLength(3));
+    });
+
+    test('still rejects a bad hash when the field is present', () {
+      final json = validJson()..['sha256'] = 'not-a-hash';
 
       expect(
         () => ModelManifest.fromJson(json),
@@ -171,6 +202,20 @@ void main() {
 
       expect(manifest.supportsAppBuild(4), isFalse);
     });
+  });
+
+  test('toJson omits an absent network field', () {
+    final json = validJson()
+      ..remove('file_url')
+      ..remove('sha256')
+      ..remove('bytes');
+
+    final written = ModelManifest.fromJson(json).toJson();
+
+    expect(written.containsKey('file_url'), isFalse);
+    expect(written.containsKey('sha256'), isFalse);
+    expect(written.containsKey('bytes'), isFalse);
+    expect(ModelManifest.fromJson(written).modelId, 'fastvit_t8_rocole');
   });
 
   test('toJson produces a manifest that parses again', () {

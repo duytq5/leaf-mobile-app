@@ -22,6 +22,7 @@ class InputSpec {
     required this.layout,
     required this.mean,
     required this.std,
+    this.resizeShortest,
   });
 
   factory InputSpec.fromJson(Map<String, dynamic> json) {
@@ -36,12 +37,20 @@ class InputSpec {
       throw ManifestFormatException('unknown layout "$layout"');
     }
 
+    final resizeShortest = _optionalInt(json, 'resize_shortest');
+    if (resizeShortest != null && resizeShortest < (width > height ? width : height)) {
+      throw const ManifestFormatException(
+        'resize_shortest must not be smaller than the crop size',
+      );
+    }
+
     return InputSpec(
       width: width,
       height: height,
       layout: layout,
       mean: _requireChannelTriple(json, 'mean'),
       std: _requireChannelTriple(json, 'std'),
+      resizeShortest: resizeShortest,
     );
   }
 
@@ -56,6 +65,13 @@ class InputSpec {
 
   /// The per-channel standard deviation in red, green, blue order.
   final List<double> std;
+
+  /// The length of the shortest side before the centre crop.
+  ///
+  /// The training code uses `Resize(292)` and then `CenterCrop(256)`. The app
+  /// must repeat both steps. A null value means the app resizes straight to
+  /// [width] by [height], which changes the aspect ratio.
+  final int? resizeShortest;
 }
 
 /// The description of one published model.
@@ -66,27 +82,27 @@ class ModelManifest {
   const ModelManifest({
     required this.modelId,
     required this.version,
-    required this.fileUrl,
-    required this.sha256,
-    required this.bytes,
     required this.input,
     required this.labels,
-    required this.minAppBuild,
+    this.fileUrl,
+    this.sha256,
+    this.bytes,
+    this.minAppBuild = 0,
   });
 
   /// Parses a manifest.
   ///
   /// Throws [ManifestFormatException] when a field is absent or not valid.
   factory ModelManifest.fromJson(Map<String, dynamic> json) {
-    final sha256 = _requireString(json, 'sha256').toLowerCase();
-    if (!_sha256Pattern.hasMatch(sha256)) {
+    final sha256 = _optionalString(json, 'sha256')?.toLowerCase();
+    if (sha256 != null && !_sha256Pattern.hasMatch(sha256)) {
       throw const ManifestFormatException(
         'sha256 must be 64 hexadecimal characters',
       );
     }
 
-    final bytes = _requireInt(json, 'bytes');
-    if (bytes <= 0) {
+    final bytes = _optionalInt(json, 'bytes');
+    if (bytes != null && bytes <= 0) {
       throw const ManifestFormatException('bytes must be positive');
     }
 
@@ -103,12 +119,12 @@ class ModelManifest {
     return ModelManifest(
       modelId: _requireString(json, 'model_id'),
       version: _requireString(json, 'version'),
-      fileUrl: _requireString(json, 'file_url'),
+      fileUrl: _optionalString(json, 'file_url'),
       sha256: sha256,
       bytes: bytes,
       input: InputSpec.fromJson(inputJson),
       labels: rawLabels.map((l) => l.toString()).toList(growable: false),
-      minAppBuild: _requireInt(json, 'min_app_build'),
+      minAppBuild: _optionalInt(json, 'min_app_build') ?? 0,
     );
   }
 
@@ -118,20 +134,24 @@ class ModelManifest {
   /// The version of this model, for example `al-round-07`.
   final String version;
 
-  final String fileUrl;
+  /// The download URL. It is null for a model that ships in the assets.
+  final String? fileUrl;
 
-  /// The SHA-256 hash of the model file, in lower-case hexadecimal.
-  final String sha256;
+  /// The SHA-256 hash of the model file, in lower-case hexadecimal. It is null
+  /// for a model that ships in the assets.
+  final String? sha256;
 
-  /// The size of the model file in bytes.
-  final int bytes;
+  /// The size of the model file in bytes. It is null for a model that ships in
+  /// the assets.
+  final int? bytes;
 
   final InputSpec input;
 
   /// The class names in the output order of the model.
   final List<String> labels;
 
-  /// The lowest app build that can run this model.
+  /// The lowest app build that can run this model. The default is 0, so an
+  /// asset manifest without the field runs on every build.
   final int minAppBuild;
 
   /// Reports whether this manifest describes a different model than
@@ -149,15 +169,16 @@ class ModelManifest {
   Map<String, dynamic> toJson() => {
     'model_id': modelId,
     'version': version,
-    'file_url': fileUrl,
-    'sha256': sha256,
-    'bytes': bytes,
+    if (fileUrl != null) 'file_url': fileUrl,
+    if (sha256 != null) 'sha256': sha256,
+    if (bytes != null) 'bytes': bytes,
     'input': {
       'width': input.width,
       'height': input.height,
       'layout': input.layout,
       'mean': input.mean,
       'std': input.std,
+      if (input.resizeShortest != null) 'resize_shortest': input.resizeShortest,
     },
     'labels': labels,
     'min_app_build': minAppBuild,
@@ -170,6 +191,24 @@ String _requireString(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is! String || value.isEmpty) {
     throw ManifestFormatException('"$key" must be a non-empty string');
+  }
+  return value;
+}
+
+String? _optionalString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! String || value.isEmpty) {
+    throw ManifestFormatException('"$key" must be a non-empty string');
+  }
+  return value;
+}
+
+int? _optionalInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! int) {
+    throw ManifestFormatException('"$key" must be an integer');
   }
   return value;
 }
