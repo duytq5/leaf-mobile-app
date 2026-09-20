@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>The app uses the camera to photograph a leaf for the disease model.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>The app reads a photo of a leaf to run the disease model.</string>
 </dict>
 </plist>
