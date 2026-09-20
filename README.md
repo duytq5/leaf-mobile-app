@@ -50,6 +50,28 @@ fvm flutter test           # run the tests
 fvm flutter run            # start the app on a connected device
 ```
 
+Use the helper script to choose a target:
+
+```bash
+./scripts/run.sh           # list the devices that are ready
+./scripts/run.sh ios       # boot an iOS simulator and run the app
+./scripts/run.sh android   # boot an Android emulator and run the app
+```
+
+The script reports the missing component when a target is not ready. It prints the
+command that installs the component.
+
+## Simulator and emulator state
+
+Xcode 26 does not include an iOS simulator runtime. Download it one time:
+
+```bash
+xcodebuild -downloadPlatform iOS
+```
+
+The download is about 9 GB. A real iPhone needs no download. A real low-performance
+Android phone gives the latency numbers that the thesis report needs.
+
 ## Structure
 
 ```
