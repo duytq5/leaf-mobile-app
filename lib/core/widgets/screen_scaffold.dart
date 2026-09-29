@@ -74,7 +74,7 @@ class ScreenScaffold extends StatelessWidget {
               ),
             ),
             Expanded(child: body),
-            if (bottom != null) bottom!,
+            ?bottom,
           ],
         ),
       ),
