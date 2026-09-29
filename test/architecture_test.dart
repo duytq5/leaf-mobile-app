@@ -41,6 +41,17 @@ void main() {
         reason: 'the domain layer must not know which package stores the data');
   });
 
+  test('no domain file imports the data layer', () {
+    final offenders = _offenders(
+      (path, source) =>
+          path.contains('/domain/') &&
+          (source.contains("/data/") || source.contains("data/datasources")),
+    );
+
+    expect(offenders, isEmpty,
+        reason: 'the domain layer sits below the data layer');
+  });
+
   test('a bloc uses a use case, never a data source', () {
     final offenders = _offenders(
       (path, source) =>

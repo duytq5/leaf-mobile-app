@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:leaf_disease_mobile/features/models/data/models/model_manifest.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/model_manifest.dart';
 
 /// A valid manifest. Each test copies it and changes one field.
 Map<String, dynamic> validJson() => {

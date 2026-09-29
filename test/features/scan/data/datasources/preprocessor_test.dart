@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:leaf_disease_mobile/features/models/data/models/model_manifest.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/model_manifest.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/preprocessor.dart';
 
 const mean = [0.485, 0.456, 0.406];
