@@ -1,26 +1,79 @@
-# Leaf Disease Mobile
+# LeafScan
 
-The app runs the thesis leaf disease classifier on a phone. The app also closes the
-active learning loop. The phone computes an uncertainty score. The app sends the image
-and the score to the server. The server adds the image to the unlabelled pool.
+The app runs the thesis leaf disease classifier on a phone. The user selects a model,
+takes a photo, and reads the predicted class. The user can also correct a wrong label.
+A correction is a label from a person, which the next active learning round can use.
 
-The design document is `docs/superpowers/specs/2026-09-20-mobile-cv-app-design.md`.
-Read it before you change the architecture.
+The design canvas is "LeafScan — Leaf Disease App". The stage 1 specification is
+`docs/superpowers/specs/2026-09-20-mobile-cv-app-design.md`. The implementation plan is
+`docs/superpowers/plans/2026-09-29-clean-architecture-leafscan.md`.
 
 ## Stack
 
 | Layer | Choice | Reason |
 |---|---|---|
 | App framework | Flutter 3.47.5 (Dart) | One codebase for Android and iOS. |
-| SDK manager | fvm | The version is pinned in `.fvmrc`. The build is reproducible. |
-| Inference | ONNX Runtime, `flutter_onnxruntime` | The export from PyTorch needs one step. |
-| Model | FastViT-T8, INT8 | The thesis benchmark selected this model. |
-| State | `flutter_riverpod` | It handles asynchronous state such as a download. |
-| Network | `dio` | It reports download progress. It retries an upload. |
+| SDK manager | fvm | The version is pinned in `.fvmrc`. |
+| Architecture | Clean Architecture | Three layers for each feature. |
+| State | flutter_bloc | One bloc for each screen. The tests read the state. |
+| Errors | fpdart `Either` | A use case returns a failure or a value. It never throws. |
+| Injection | get_it | One container joins the layers. |
+| Inference | ONNX Runtime | The export from PyTorch needs one step. |
+| Model | FastViT-T8 | The thesis benchmark selected it. |
+
+## Architecture
+
+```
+lib/
+  core/            failures, the use case base, the design tokens, shared widgets
+  features/
+    consent/       the upload agreement
+    models/        the model catalog and the picker
+    scan/          the capture, the result and the correction
+  injection_container.dart
+  app.dart         the routes
+  main.dart
+```
+
+Each feature holds three layers.
+
+| Layer | Holds | Rule |
+|---|---|---|
+| `domain` | entities, repository interfaces, use cases | It imports no Flutter package and no data package. |
+| `data` | data sources, repository implementations | It implements a domain interface. |
+| `presentation` | blocs, pages, widgets | A bloc calls a use case, never a data source. |
+
+`test/architecture_test.dart` reads every file and fails when a rule breaks. A screen that
+holds its own colour also fails, because a colour belongs in `AppColors`.
+
+## The screens
+
+| Artboard | Page | State |
+|---|---|---|
+| 0 · Consensus | `consent/presentation/pages/consent_page.dart` | Done. |
+| 0b · Full terms | `consent/presentation/pages/terms_page.dart` | Done. |
+| 1 · Choose model | `models/presentation/pages/model_catalog_page.dart` | Done. |
+| 2 · Add photo | `scan/presentation/pages/capture_page.dart` | Done. |
+| 3 · Result | `scan/presentation/pages/result_page.dart` | Done. |
+| 4 · Report wrong label | `scan/presentation/pages/report_page.dart` | Done. |
+
+## The labels come from the manifest
+
+**The design canvas shows labels that the trained models do not have.** The coffee card
+lists four rust severity levels. The trained model has 3 classes, because this copy of
+RoCoLe puts the rust levels in one folder. The durian card lists 5 labels. The dataset has
+6 folders.
+
+Therefore every screen reads the labels from `manifest.json`. No screen holds a label in
+its code. The card, the result list and the correction rows all follow the model that
+runs. Three tests hold this rule:
+
+- `model_card_test.dart` asserts 3 chips for coffee and 6 for durian.
+- `report_page_test.dart` asserts 4 rows for coffee and 7 for durian.
+- `scan_repository_impl_test.dart` asserts a failure when the count of logits differs
+  from the count of labels.
 
 ## Set up the machine
-
-The project needs fvm. The Flutter version installs automatically.
 
 ```bash
 brew tap leoafarias/fvm
@@ -29,86 +82,43 @@ cd leaf-disease-mobile
 fvm install
 ```
 
-Android builds need a JDK between 17 and 25. This machine uses Temurin 21:
+An Android build needs a JDK between 17 and 25:
 
 ```bash
 fvm flutter config --jdk-dir=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home
 ```
 
-Check the state of the toolchain:
-
-```bash
-fvm flutter doctor
-```
+The iOS deployment target is 16.0, because `flutter_onnxruntime` needs it.
 
 ## Commands
 
 ```bash
-fvm flutter pub get        # install the packages
-fvm flutter analyze        # run the static analysis
-fvm flutter test           # run the tests
-fvm flutter run            # start the app on a connected device
+fvm flutter pub get                # install the packages
+fvm flutter analyze                # run the static analysis
+fvm flutter test                   # run the unit and widget tests
+./scripts/run.sh                   # list the devices that are ready
+./scripts/run.sh ios               # boot an iOS simulator and run the app
+fvm flutter test integration_test/flow_test.dart -d <device-id>   # walk the app
 ```
 
-Use the helper script to choose a target:
+The integration test runs the real models on a device. It proves that the ONNX files load
+on the platform, which a widget test cannot show.
 
-```bash
-./scripts/run.sh           # list the devices that are ready
-./scripts/run.sh ios       # boot an iOS simulator and run the app
-./scripts/run.sh android   # boot an Android emulator and run the app
-```
+## The model files
 
-The script reports the missing component when a target is not ready. It prints the
-command that installs the component.
-
-## Simulator and emulator state
-
-Xcode 26 does not include an iOS simulator runtime. Download it one time:
-
-```bash
-xcodebuild -downloadPlatform iOS
-```
-
-The download is about 9 GB. A real iPhone needs no download. A real low-performance
-Android phone gives the latency numbers that the thesis report needs.
-
-## Structure
-
-```
-lib/
-  main.dart                  the entry point
-  src/
-    app.dart                 the root widget
-    model/                   the manifest, the classifier and the scores
-      model_manifest.dart    parses and validates a published manifest
-      uncertainty.dart       softmax, entropy, least confidence and margin
-    capture/                 the camera and the photo library
-    upload/                  the observation queue and the API client
-    ui/                      the screens and the widgets
-test/
-  model/                     the unit tests for the pure Dart code
-docs/
-  superpowers/specs/         the design documents
-```
-
-## Rules for a model file
-
-Never commit a model file. `.gitignore` blocks `*.onnx` and `*.ort`.
-
-A model file always travels with a manifest. The manifest holds the input size, the
-normalization values and the label order. The app reads these values from the manifest.
-The app does not hold them in its code. This rule prevents a silent failure after an
-update.
+See `assets/models/README.md`. Never commit a model file. Produce both files with
+`tools/export_onnx.py`, then check them with `tools/verify_onnx.py`.
 
 ## State of the work
 
 | Item | State |
 |---|---|
-| The Flutter project and the toolchain | Done. |
-| The design document | Done. |
-| `ModelManifest` and `Uncertainty` with tests | Done. |
-| `ModelStore`, `ModelUpdater`, `Preprocessor`, `Classifier` | Not started. |
-| The capture screen and the result screen | Not started. |
-| The upload queue and the consent screen | Not started. |
+| The six screens of the design | Done. |
+| Clean Architecture with three layers for each feature | Done. |
+| flutter_bloc for every screen | Done. |
+| The coffee model and the durian model | Done. Both verified on real images. |
+| 185 unit and widget tests, 3 integration tests | Done. All pass. |
+| The model download over the network | Not started. Stage 2. |
+| The upload of an image and a score | Not started. Stage 3. |
 | The Android SDK on this machine | Not installed. |
-| Xcode for the iOS build | Not installed. |
+| Latency on a real low-performance Android phone | Not measured. |
