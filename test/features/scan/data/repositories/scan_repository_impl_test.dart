@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leaf_disease_mobile/core/error/failures.dart';
-import 'package:leaf_disease_mobile/features/models/domain/entities/leaf_model.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/correction_local_data_source.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/image_picker_data_source.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/onnx_classifier_data_source.dart';
