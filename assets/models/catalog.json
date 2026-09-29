@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "id": "coffee_rocole",
+      "display_name": "Coffee Leaf",
+      "dataset": "RoCoLe",
+      "dir": "assets/models/coffee"
+    },
+    {
+      "id": "durian",
+      "display_name": "Durian Leaf",
+      "dataset": "Vietnamese durian",
+      "dir": "assets/models/durian"
+    }
+  ]
+}
