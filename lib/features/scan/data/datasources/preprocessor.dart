@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-import 'model_manifest.dart';
+import '../../../models/data/models/model_manifest.dart';
 
 /// Thrown when the app cannot convert an image into a tensor.
 class PreprocessException implements Exception {

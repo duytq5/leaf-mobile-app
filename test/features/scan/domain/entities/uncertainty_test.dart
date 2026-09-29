@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:leaf_disease_mobile/src/model/uncertainty.dart';
+import 'package:leaf_disease_mobile/features/scan/domain/entities/uncertainty.dart';
 
 void main() {
   group('softmax', () {

@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:equatable/equatable.dart';
+
 /// Converts raw model outputs into probabilities.
 ///
 /// The function subtracts the maximum logit before the exponential. This keeps
@@ -22,7 +24,7 @@ List<double> softmax(List<double> logits) {
 /// different acquisition function from the thesis. The app computes all three,
 /// so a later round can change the acquisition function without a new app
 /// release.
-class Uncertainty {
+class Uncertainty extends Equatable {
   const Uncertainty({
     required this.entropy,
     required this.leastConfidence,
@@ -78,6 +80,9 @@ class Uncertainty {
     'least_confidence': leastConfidence,
     'margin': margin,
   };
+
+  @override
+  List<Object?> get props => [entropy, leastConfidence, margin];
 
   @override
   String toString() =>
