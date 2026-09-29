@@ -1,0 +1,81 @@
+import 'package:flutter/material.dart';
+
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/screen_scaffold.dart';
+
+/// Artboard `0b · Full terms`.
+class TermsPage extends StatelessWidget {
+  const TermsPage({super.key});
+
+  static const _sections = <(String, String)>[
+    (
+      'What the app uploads',
+      'The app uploads every photo you take or choose. The app also uploads the '
+          'prediction of the model and a score that says how certain the model is.',
+    ),
+    (
+      'Why the app uploads a photo',
+      'The photos build the training set of the next model. A photo from a real '
+          'field is more useful than a photo from a laboratory.',
+    ),
+    (
+      'What a correction does',
+      'When you report a wrong label, the app sends your correction. A correction '
+          'is a label from a person. It improves the model more than a photo alone.',
+    ),
+    (
+      'What the app does not collect',
+      'The app does not ask for your name, your email address or your telephone '
+          'number. The app does not read your contacts and does not track your position.',
+    ),
+    (
+      'How long the data stays',
+      'The photos stay for the length of the research project. The research team '
+          'holds them. The team does not sell them and does not give them to an '
+          'advertiser.',
+    ),
+    (
+      'How to stop',
+      'Close the app to stop. The app uploads nothing before you agree.',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenScaffold(
+      title: 'Full terms',
+      onBack: () => Navigator.of(context).pop(),
+      backLabel: 'Back to the agreement',
+      body: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+        itemCount: _sections.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 22),
+        itemBuilder: (context, index) {
+          final (heading, body) = _sections[index];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                heading,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                body,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.55,
+                  color: AppColors.muted,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
