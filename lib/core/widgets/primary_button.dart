@@ -93,11 +93,12 @@ class _Content extends StatelessWidget {
   Widget build(BuildContext context) {
     if (icon == null) return Text(label);
     return Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, size: 22),
         const SizedBox(width: 10),
-        Text(label),
+        Flexible(child: Text(label, overflow: TextOverflow.ellipsis)),
       ],
     );
   }
