@@ -1,0 +1,14 @@
+# The icon of the LeafScan design: the white mark on the primary blue.
+# Produce the files with:
+#   fvm dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/brand/app_icon.png"
+
+  android: "ic_launcher"
+  adaptive_icon_background: "#1558B0"
+  adaptive_icon_foreground: "assets/brand/app_icon_foreground.png"
+  min_sdk_android: 21
+
+  ios: true
+  # An iOS icon carries no transparency. The system draws the rounded corner.
+  remove_alpha_ios: true

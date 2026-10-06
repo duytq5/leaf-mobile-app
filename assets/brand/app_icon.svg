@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- The app icon of the LeafScan design: the white mark on the primary blue. -->
+  <rect width="1024" height="1024" fill="#1558B0"/>
+  <!-- The mark is drawn on a 48 unit grid, scaled to 640 and centred. -->
+  <g transform="translate(192 192) scale(13.3333)" fill="none">
+    <path d="M6 16V10a4 4 0 0 1 4-4h6M32 6h6a4 4 0 0 1 4 4v6M42 32v6a4 4 0 0 1-4 4h-6M16 42h-6a4 4 0 0 1-4-4v-6"
+          stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M14 34C14 21 21 14 34 14c0 13-7 20-20 20Z" fill="#ffffff"/>
+    <path d="M14 34L26 22" stroke="#1558B0" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+</svg>

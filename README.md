@@ -104,6 +104,29 @@ fvm flutter test integration_test/flow_test.dart -d <device-id>   # walk the app
 The integration test runs the real models on a device. It proves that the ONNX files load
 on the platform, which a widget test cannot show.
 
+## The brand
+
+The mark comes from the `Logo` artboard of the design: four scan brackets around a leaf
+with one vein. The source files live in `assets/brand/`.
+
+| File | Use |
+|---|---|
+| `app_icon.svg` | The source of the launcher icon. |
+| `app_icon_foreground.svg` | The Android adaptive foreground. The mark sits inside the safe circle. |
+| `app_icon.png` | The 1024 pixel render that the generator reads. |
+
+`lib/core/widgets/leafscan_mark.dart` draws the same paths in the app, so the screen and
+the icon never differ. Produce the launcher icons again after a change:
+
+```bash
+rsvg-convert -w 1024 -h 1024 assets/brand/app_icon.svg -o assets/brand/app_icon.png
+rsvg-convert -w 1024 -h 1024 assets/brand/app_icon_foreground.svg \
+  -o assets/brand/app_icon_foreground.png
+fvm dart run flutter_launcher_icons
+```
+
+The app name is `LeafScan` on both platforms.
+
 ## The model files
 
 See `assets/models/README.md`. Never commit a model file. Produce both files with
@@ -114,10 +137,11 @@ See `assets/models/README.md`. Never commit a model file. Produce both files wit
 | Item | State |
 |---|---|
 | The six screens of the design | Done. |
+| The app icon and the name | Done. Both platforms. |
 | Clean Architecture with three layers for each feature | Done. |
 | flutter_bloc for every screen | Done. |
 | The coffee model and the durian model | Done. Both verified on real images. |
-| 185 unit and widget tests, 3 integration tests | Done. All pass. |
+| 189 unit and widget tests, 3 integration tests | Done. All pass. |
 | The model download over the network | Not started. Stage 2. |
 | The upload of an image and a score | Not started. Stage 3. |
 | The Android SDK on this machine | Not installed. |

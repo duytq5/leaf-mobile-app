@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/leafscan_mark.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../domain/entities/leaf_model.dart';
 import '../bloc/model_catalog_bloc.dart';
@@ -60,7 +61,7 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.eco, size: 26, color: AppColors.onPrimary),
+              const LeafScanMark(size: 26, veinColor: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'LeafScan',

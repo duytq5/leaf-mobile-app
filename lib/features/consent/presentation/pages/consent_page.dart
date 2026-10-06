@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/leafscan_mark.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../bloc/consent_bloc.dart';
 import 'terms_page.dart';
@@ -106,19 +107,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: const Icon(
-            Icons.eco_outlined,
-            size: 40,
-            color: AppColors.onPrimary,
-          ),
-        ),
+        const LeafScanTile(),
         const SizedBox(height: 12),
         Text('Before you start', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
