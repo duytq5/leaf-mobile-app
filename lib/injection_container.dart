@@ -26,14 +26,12 @@ import 'features/models/domain/usecases/get_models.dart';
 import 'features/models/domain/usecases/get_selected_model.dart';
 import 'features/models/domain/usecases/select_model.dart';
 import 'features/models/presentation/bloc/model_catalog_bloc.dart';
-import 'features/scan/data/datasources/correction_local_data_source.dart';
 import 'features/scan/data/datasources/image_picker_data_source.dart';
 import 'features/scan/data/datasources/onnx_classifier_data_source.dart';
 import 'features/scan/data/repositories/scan_repository_impl.dart';
 import 'features/scan/domain/repositories/scan_repository.dart';
 import 'features/scan/domain/usecases/classify_image.dart';
 import 'features/scan/domain/usecases/pick_image.dart';
-import 'features/scan/domain/usecases/submit_correction.dart';
 import 'features/scan/presentation/bloc/scan_bloc.dart';
 
 final sl = GetIt.instance;
@@ -92,9 +90,6 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<OnnxClassifierDataSource>(
     OnnxClassifierDataSourceImpl.new,
   );
-  sl.registerLazySingleton<CorrectionLocalDataSource>(
-    CorrectionLocalDataSourceImpl.new,
-  );
 
   // Repositories
   sl.registerLazySingleton<ConsentRepository>(
@@ -115,7 +110,6 @@ Future<void> initDependencies() async {
     () => ScanRepositoryImpl(
       picker: sl(),
       classifier: sl(),
-      corrections: sl(),
     ),
   );
 
@@ -130,7 +124,6 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => GetAccessToken(sl()));
   sl.registerLazySingleton(() => PickImage(sl()));
   sl.registerLazySingleton(() => ClassifyImage(sl()));
-  sl.registerLazySingleton(() => SubmitCorrection(sl()));
 
   // Blocs
   sl.registerFactory(() => ConsentBloc(getConsent: sl(), saveConsent: sl()));

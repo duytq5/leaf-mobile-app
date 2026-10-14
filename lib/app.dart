@@ -8,11 +8,8 @@ import 'features/models/domain/entities/leaf_model.dart';
 import 'features/models/presentation/bloc/model_catalog_bloc.dart';
 import 'features/models/presentation/pages/model_catalog_page.dart';
 import 'features/scan/domain/entities/scan_result.dart';
-import 'features/scan/domain/usecases/submit_correction.dart';
-import 'features/scan/presentation/bloc/correction_bloc.dart';
 import 'features/scan/presentation/bloc/scan_bloc.dart';
 import 'features/scan/presentation/pages/capture_page.dart';
-import 'features/scan/presentation/pages/report_page.dart';
 import 'features/scan/presentation/pages/result_page.dart';
 import 'injection_container.dart';
 
@@ -131,46 +128,6 @@ class ResultRoute extends StatelessWidget {
       model: model,
       onBack: () => Navigator.of(context).pop(),
       onContinue: () => Navigator.of(context).pop(),
-      onReport: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ReportRoute(result: result, model: model),
-        ),
-      ),
-    );
-  }
-}
-
-/// Artboard 4, with its bloc.
-class ReportRoute extends StatelessWidget {
-  const ReportRoute({required this.result, required this.model, super.key});
-
-  final ScanResult result;
-  final LeafModel model;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => CorrectionBloc(
-        submitCorrection: sl<SubmitCorrection>(),
-        result: result,
-        model: model,
-      ),
-      child: Builder(
-        builder: (context) => ReportPage(
-          onBack: () => Navigator.of(context).pop(),
-          onSubmitted: () {
-            ScaffoldMessenger.of(context)
-              ..clearSnackBars()
-              ..showSnackBar(
-                const SnackBar(content: Text('Thank you for the correction.')),
-              );
-            // Return to the capture screen for the next leaf.
-            Navigator.of(context)
-              ..pop()
-              ..pop();
-          },
-        ),
-      ),
     );
   }
 }

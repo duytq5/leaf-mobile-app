@@ -2,12 +2,10 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leaf_disease_mobile/core/error/failures.dart';
-import 'package:leaf_disease_mobile/features/scan/data/datasources/correction_local_data_source.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/image_picker_data_source.dart';
 import 'package:leaf_disease_mobile/features/scan/data/datasources/onnx_classifier_data_source.dart';
 import 'package:leaf_disease_mobile/features/scan/data/repositories/scan_repository_impl.dart';
 import 'package:leaf_disease_mobile/features/scan/domain/entities/image_source_kind.dart';
-import 'package:leaf_disease_mobile/features/scan/domain/entities/label_correction.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../support/model_fixtures.dart';
@@ -16,39 +14,25 @@ class MockPicker extends Mock implements ImagePickerDataSource {}
 
 class MockClassifier extends Mock implements OnnxClassifierDataSource {}
 
-class MockCorrections extends Mock implements CorrectionLocalDataSource {}
-
 final imageBytes = Uint8List.fromList(List.filled(32, 7));
 
 void main() {
   late MockPicker picker;
   late MockClassifier classifier;
-  late MockCorrections corrections;
   late ScanRepositoryImpl repository;
 
   setUpAll(() {
     registerFallbackValue(ImageSourceKind.camera);
     registerFallbackValue(coffeeModel);
     registerFallbackValue(Uint8List(0));
-    registerFallbackValue(
-      LabelCorrection(
-        modelId: 'x',
-        modelVersion: 'v',
-        predictedLabel: 'a',
-        correctedLabel: 'b',
-        submittedAt: DateTime(2026),
-      ),
-    );
   });
 
   setUp(() {
     picker = MockPicker();
     classifier = MockClassifier();
-    corrections = MockCorrections();
     repository = ScanRepositoryImpl(
       picker: picker,
       classifier: classifier,
-      corrections: corrections,
     );
   });
 
@@ -215,43 +199,6 @@ void main() {
         () => result.getRight().toNullable()!.scores.clear(),
         throwsUnsupportedError,
       );
-    });
-  });
-
-  group('saveCorrection', () {
-    final correction = LabelCorrection(
-      modelId: 'coffee_rocole',
-      modelVersion: 'fold-1-best',
-      predictedLabel: 'coffee___rust',
-      correctedLabel: 'coffee___healthy',
-      submittedAt: DateTime(2026, 9, 29),
-    );
-
-    test('appends the correction', () async {
-      when(() => corrections.append(any())).thenAnswer((_) async {});
-
-      final result = await repository.saveCorrection(correction);
-
-      expect(result.isRight(), isTrue);
-      verify(() => corrections.append(correction)).called(1);
-    });
-
-    test('an exception becomes a CacheFailure', () async {
-      when(() => corrections.append(any())).thenThrow(Exception('full'));
-
-      final result = await repository.saveCorrection(correction);
-
-      expect(result.getLeft().toNullable(), isA<CacheFailure>());
-    });
-
-    test('writes the fields the server reads', () {
-      expect(correction.toJson(), {
-        'model_id': 'coffee_rocole',
-        'model_version': 'fold-1-best',
-        'predicted_label': 'coffee___rust',
-        'corrected_label': 'coffee___healthy',
-        'submitted_at': DateTime(2026, 9, 29).toIso8601String(),
-      });
     });
   });
 }

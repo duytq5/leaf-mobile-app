@@ -13,7 +13,6 @@ void main() {
     WidgetTester tester, {
     ScanResult? result,
     VoidCallback? onContinue,
-    VoidCallback? onReport,
   }) async {
     usePhoneFrame(tester);
     addTearDown(() => resetPhoneFrame(tester));
@@ -25,7 +24,6 @@ void main() {
           model: coffeeModel,
           onBack: () {},
           onContinue: onContinue ?? () {},
-          onReport: onReport ?? () {},
         ),
       ),
     );
@@ -82,20 +80,20 @@ void main() {
     expect(find.textContaining('Rust level'), findsNothing);
   });
 
-  testWidgets('both actions report a tap', (tester) async {
+  testWidgets('Continue reports a tap', (tester) async {
     var continues = 0;
-    var reports = 0;
-    await pump(
-      tester,
-      onContinue: () => continues++,
-      onReport: () => reports++,
-    );
+    await pump(tester, onContinue: () => continues++);
 
     await tester.tap(find.text('Continue'));
-    await tester.tap(find.text('Report wrong label'));
 
     expect(continues, 1);
-    expect(reports, 1);
+  });
+
+  testWidgets('offers no label report', (tester) async {
+    // Experts label in Label Studio; the app sends only the prediction.
+    await pump(tester);
+
+    expect(find.text('Report wrong label'), findsNothing);
   });
 
   testWidgets('follows a different result', (tester) async {
