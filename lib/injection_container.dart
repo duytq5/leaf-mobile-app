@@ -3,6 +3,14 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/app_config.dart';
+import 'features/auth/data/datasources/browser_auth_data_source.dart';
+import 'features/auth/data/datasources/cognito_auth_data_source.dart';
+import 'features/auth/data/datasources/token_store.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/domain/repositories/auth_repository.dart';
+import 'features/auth/domain/usecases/get_access_token.dart';
+import 'features/auth/domain/usecases/sign_in.dart';
+import 'features/auth/domain/usecases/sign_out.dart';
 import 'features/consent/data/datasources/consent_local_data_source.dart';
 import 'features/consent/data/repositories/consent_repository_impl.dart';
 import 'features/consent/domain/repositories/consent_repository.dart';
@@ -59,6 +67,25 @@ Future<void> initDependencies() async {
     () => ModelRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<ModelFileStore>(ModelFileStoreImpl.new);
+  sl.registerSingleton(
+    const CognitoSettings(
+      domain: AppConfig.cognitoDomain,
+      clientId: AppConfig.cognitoClientId,
+      redirectUri: AppConfig.cognitoRedirectUri,
+      identityProvider: AppConfig.cognitoIdentityProvider,
+    ),
+  );
+  sl.registerLazySingleton<CognitoAuthDataSource>(
+    () => CognitoAuthDataSourceImpl(
+      // The token endpoint is on the login host, not on the Edge API.
+      Dio(BaseOptions(connectTimeout: const Duration(seconds: 10))),
+      sl(),
+    ),
+  );
+  sl.registerLazySingleton<BrowserAuthDataSource>(
+    BrowserAuthDataSourceImpl.new,
+  );
+  sl.registerLazySingleton<TokenStore>(TokenStoreImpl.new);
   sl.registerLazySingleton<ImagePickerDataSource>(
     ImagePickerDataSourceImpl.new,
   );
@@ -76,6 +103,14 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ModelCatalogRepository>(
     () => ModelCatalogRepositoryImpl(sl(), remote: sl(), files: sl()),
   );
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      cognito: sl(),
+      browser: sl(),
+      store: sl(),
+      settings: sl(),
+    ),
+  );
   sl.registerLazySingleton<ScanRepository>(
     () => ScanRepositoryImpl(
       picker: sl(),
@@ -90,6 +125,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => GetModels(sl()));
   sl.registerLazySingleton(() => GetSelectedModel(sl()));
   sl.registerLazySingleton(() => SelectModel(sl()));
+  sl.registerLazySingleton(() => SignIn(sl()));
+  sl.registerLazySingleton(() => SignOut(sl()));
+  sl.registerLazySingleton(() => GetAccessToken(sl()));
   sl.registerLazySingleton(() => PickImage(sl()));
   sl.registerLazySingleton(() => ClassifyImage(sl()));
   sl.registerLazySingleton(() => SubmitCorrection(sl()));
