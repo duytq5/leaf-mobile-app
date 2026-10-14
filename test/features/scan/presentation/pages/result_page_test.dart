@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leaf_disease_mobile/core/theme/app_theme.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/leaf_model.dart';
 import 'package:leaf_disease_mobile/features/scan/domain/entities/scan_result.dart';
 import 'package:leaf_disease_mobile/features/scan/presentation/pages/result_page.dart';
 
@@ -13,6 +14,10 @@ void main() {
     WidgetTester tester, {
     ScanResult? result,
     VoidCallback? onContinue,
+    LeafModel? model,
+    bool signedIn = false,
+    int pending = 0,
+    VoidCallback? onSignIn,
   }) async {
     usePhoneFrame(tester);
     addTearDown(() => resetPhoneFrame(tester));
@@ -21,9 +26,12 @@ void main() {
         theme: AppTheme.light(),
         home: ResultPage(
           result: result ?? coffeeScan(),
-          model: coffeeModel,
+          model: model ?? coffeeModel,
           onBack: () {},
           onContinue: onContinue ?? () {},
+          signedIn: signedIn,
+          pending: pending,
+          onSignIn: onSignIn ?? () {},
         ),
       ),
     );
@@ -94,6 +102,41 @@ void main() {
     await pump(tester);
 
     expect(find.text('Report wrong label'), findsNothing);
+  });
+
+  group('sending the photo', () {
+    testWidgets('a bundled model offers no sign-in', (tester) async {
+      await pump(tester);
+
+      expect(find.text('Sign in to send this photo'), findsNothing);
+    });
+
+    testWidgets('a released model asks a signed-out user to sign in',
+        (tester) async {
+      var taps = 0;
+      await pump(tester, model: releasedModel, onSignIn: () => taps++);
+
+      await tester.tap(find.text('Sign in to send this photo'));
+
+      expect(taps, 1);
+    });
+
+    testWidgets('a signed-in user sees what still waits', (tester) async {
+      await pump(tester, model: releasedModel, signedIn: true, pending: 2);
+
+      expect(find.text('Sign in to send this photo'), findsNothing);
+      expect(
+        find.text('2 photos wait. They are sent when the phone is online.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a signed-in user with nothing waiting is thanked',
+        (tester) async {
+      await pump(tester, model: releasedModel, signedIn: true);
+
+      expect(find.text('Photo sent. Thank you for helping.'), findsOneWidget);
+    });
   });
 
   testWidgets('follows a different result', (tester) async {

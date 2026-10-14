@@ -43,3 +43,10 @@ class AuthFailure extends Failure {
 class NetworkFailure extends Failure {
   const NetworkFailure(super.message);
 }
+
+/// The user sent the daily number of photos the platform allows.
+class QuotaFailure extends Failure {
+  const QuotaFailure(super.message, {this.retryAfter});
+
+  final Duration? retryAfter;
+}

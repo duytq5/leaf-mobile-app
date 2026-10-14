@@ -7,6 +7,7 @@ import 'package:leaf_disease_mobile/features/consent/presentation/bloc/consent_b
 import 'package:leaf_disease_mobile/features/consent/presentation/pages/consent_page.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/bloc/model_catalog_bloc.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/pages/model_catalog_page.dart';
+import 'package:leaf_disease_mobile/features/outbox/presentation/bloc/outbox_bloc.dart';
 import 'package:leaf_disease_mobile/injection_container.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,6 +20,9 @@ class MockConsentBloc extends MockBloc<ConsentEvent, ConsentState>
 class MockModelCatalogBloc
     extends MockBloc<ModelCatalogEvent, ModelCatalogState>
     implements ModelCatalogBloc {}
+
+class MockOutboxBloc extends MockBloc<OutboxEvent, OutboxState>
+    implements OutboxBloc {}
 
 void main() {
   late MockConsentBloc consentBloc;
@@ -35,7 +39,11 @@ void main() {
       ),
     );
 
+    final outboxBloc = MockOutboxBloc();
+    when(() => outboxBloc.state).thenReturn(const OutboxState());
+
     GetIt.instance
+      ..registerFactory<OutboxBloc>(() => outboxBloc)
       ..registerFactory<ConsentBloc>(() => consentBloc)
       ..registerFactory<ModelCatalogBloc>(() => catalogBloc);
   });
