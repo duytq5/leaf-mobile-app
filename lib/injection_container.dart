@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/config/app_config.dart';
 import 'features/consent/data/datasources/consent_local_data_source.dart';
 import 'features/consent/data/repositories/consent_repository_impl.dart';
 import 'features/consent/domain/repositories/consent_repository.dart';
@@ -8,6 +10,7 @@ import 'features/consent/domain/usecases/get_consent.dart';
 import 'features/consent/domain/usecases/save_consent.dart';
 import 'features/consent/presentation/bloc/consent_bloc.dart';
 import 'features/models/data/datasources/model_catalog_local_data_source.dart';
+import 'features/models/data/datasources/model_remote_data_source.dart';
 import 'features/models/data/repositories/model_catalog_repository_impl.dart';
 import 'features/models/domain/repositories/model_catalog_repository.dart';
 import 'features/models/domain/usecases/get_models.dart';
@@ -34,6 +37,15 @@ Future<void> initDependencies() async {
   // External
   sl.registerSingletonAsync<SharedPreferences>(SharedPreferences.getInstance);
   await sl.isReady<SharedPreferences>();
+  sl.registerLazySingleton<Dio>(
+    () => Dio(
+      BaseOptions(
+        baseUrl: AppConfig.apiBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 60),
+      ),
+    ),
+  );
 
   // Data sources
   sl.registerLazySingleton<ConsentLocalDataSource>(
@@ -41,6 +53,9 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton<ModelCatalogLocalDataSource>(
     () => ModelCatalogLocalDataSourceImpl(preferences: sl()),
+  );
+  sl.registerLazySingleton<ModelRemoteDataSource>(
+    () => ModelRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<ImagePickerDataSource>(
     ImagePickerDataSourceImpl.new,

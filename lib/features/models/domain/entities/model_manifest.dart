@@ -88,6 +88,8 @@ class ModelManifest {
     this.sha256,
     this.bytes,
     this.minAppBuild = 0,
+    this.labelNames,
+    this.released = false,
   });
 
   /// Parses a manifest.
@@ -128,6 +130,78 @@ class ModelManifest {
     );
   }
 
+  /// Parses a manifest the platform publishes next to a released model, at
+  /// `edge/{model}/{version}/manifest.json`.
+  ///
+  /// The platform resizes straight to the input size, so [InputSpec.resizeShortest]
+  /// is null. Each label carries a `code`, which the captures API expects, and a
+  /// `display_name`, which the screen shows.
+  ///
+  /// Throws [ManifestFormatException] when a field is absent or not valid.
+  factory ModelManifest.fromPlatformJson(Map<String, dynamic> json) {
+    final format = json['format'] ?? 'onnx';
+    if (format != 'onnx') {
+      throw ManifestFormatException('unknown format "$format"');
+    }
+
+    final version = _requireInt(json, 'version');
+    if (version < 1) {
+      throw const ManifestFormatException('version must be 1 or more');
+    }
+
+    final sha256 = _requireString(json, 'sha256').toLowerCase();
+    if (!_sha256Pattern.hasMatch(sha256)) {
+      throw const ManifestFormatException(
+        'sha256 must be 64 hexadecimal characters',
+      );
+    }
+
+    final bytes = _requireInt(json, 'size_bytes');
+    if (bytes <= 0) {
+      throw const ManifestFormatException('size_bytes must be positive');
+    }
+
+    final preprocess = json['preprocess'];
+    if (preprocess is! Map<String, dynamic>) {
+      throw const ManifestFormatException('preprocess must be an object');
+    }
+    final size = preprocess['input_size'];
+    if (size is! List || size.length != 2 || size.any((v) => v is! int)) {
+      throw const ManifestFormatException('input_size must hold 2 integers');
+    }
+
+    final rawLabels = json['labels'];
+    if (rawLabels is! List || rawLabels.isEmpty) {
+      throw const ManifestFormatException('labels must be a non-empty list');
+    }
+    final codes = <String>[];
+    final names = <String>[];
+    for (final raw in rawLabels) {
+      if (raw is! Map<String, dynamic>) {
+        throw const ManifestFormatException('a label must be an object');
+      }
+      codes.add(_requireString(raw, 'code'));
+      names.add(_requireString(raw, 'display_name'));
+    }
+
+    return ModelManifest(
+      modelId: _requireString(json, 'model'),
+      version: '$version',
+      sha256: sha256,
+      bytes: bytes,
+      input: InputSpec.fromJson({
+        'height': size[0],
+        'width': size[1],
+        'layout': 'NCHW',
+        'mean': preprocess['mean'],
+        'std': preprocess['std'],
+      }),
+      labels: List.unmodifiable(codes),
+      labelNames: List.unmodifiable(names),
+      released: true,
+    );
+  }
+
   /// The identity of the model family, for example `fastvit_t8_rocole`.
   final String modelId;
 
@@ -149,6 +223,22 @@ class ModelManifest {
 
   /// The class names in the output order of the model.
   final List<String> labels;
+
+  /// The `display_name` of each label, in the order of [labels]. It is null
+  /// for a bundled manifest.
+  final List<String>? labelNames;
+
+  /// The class names the screen shows, in the order of [labels]. A bundled
+  /// manifest has no names, so it shows each label as it is spelled.
+  List<String> get displayNames => labelNames ?? labels;
+
+  /// Whether the platform released this model. Only a released model has a
+  /// version the captures API knows.
+  final bool released;
+
+  /// The model version as `POST /v1/captures` names it, for example
+  /// `leaf-disease/13`. It is null for a bundled model.
+  String? get modelVersionRef => released ? '$modelId/$version' : null;
 
   /// The lowest app build that can run this model. The default is 0, so an
   /// asset manifest without the field runs on every build.
