@@ -256,6 +256,25 @@ class ModelManifest {
   /// Reports whether the app build [appBuild] can run this model.
   bool supportsAppBuild(int appBuild) => appBuild >= minAppBuild;
 
+  /// Writes the manifest in the platform's shape, so
+  /// [ModelManifest.fromPlatformJson] reads it back.
+  Map<String, dynamic> toPlatformJson() => {
+    'model': modelId,
+    'version': int.parse(version),
+    'format': 'onnx',
+    'sha256': sha256,
+    'size_bytes': bytes,
+    'preprocess': {
+      'input_size': [input.height, input.width],
+      'mean': input.mean,
+      'std': input.std,
+    },
+    'labels': [
+      for (var i = 0; i < labels.length; i++)
+        {'code': labels[i], 'display_name': displayNames[i]},
+    ],
+  };
+
   Map<String, dynamic> toJson() => {
     'model_id': modelId,
     'version': version,

@@ -6,7 +6,7 @@ import '../../domain/entities/leaf_model.dart';
 
 /// One card of the picker.
 ///
-/// The chips come from `model.labels`, which comes from the manifest. A card
+/// The chips come from `model.labelNames`, which comes from the manifest. A card
 /// never holds a label in its code.
 class ModelCard extends StatelessWidget {
   const ModelCard({
@@ -77,7 +77,7 @@ class ModelCard extends StatelessWidget {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  for (final label in model.labels)
+                  for (final label in model.labelNames)
                     _LabelChip(label: label, highlighted: selected),
                 ],
               ),

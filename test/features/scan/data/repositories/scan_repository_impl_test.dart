@@ -101,6 +101,27 @@ void main() {
       expect(scan.top.label, 'coffee___red_spider_mite');
     });
 
+    test('a released model scores display names and keeps the codes', () async {
+      await givenLogits([0.1, 3.0]);
+
+      final result =
+          await repository.classify(bytes: imageBytes, model: releasedModel);
+      final scan = result.getRight().toNullable()!;
+
+      expect(scan.top.label, 'Rust');
+      expect(scan.top.code, 'rust');
+      expect(scan.scores.last.code, 'healthy');
+    });
+
+    test('a bundled label is its own code', () async {
+      await givenLogits([9.0, 1.0, 2.0]);
+
+      final result =
+          await repository.classify(bytes: imageBytes, model: coffeeModel);
+
+      expect(result.getRight().toNullable()!.top.code, 'coffee___healthy');
+    });
+
     test('keeps every label paired with its own logit', () async {
       await givenLogits([9.0, 1.0, 2.0]);
 

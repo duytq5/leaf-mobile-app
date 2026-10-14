@@ -10,6 +10,7 @@ import 'features/consent/domain/usecases/get_consent.dart';
 import 'features/consent/domain/usecases/save_consent.dart';
 import 'features/consent/presentation/bloc/consent_bloc.dart';
 import 'features/models/data/datasources/model_catalog_local_data_source.dart';
+import 'features/models/data/datasources/model_file_store.dart';
 import 'features/models/data/datasources/model_remote_data_source.dart';
 import 'features/models/data/repositories/model_catalog_repository_impl.dart';
 import 'features/models/domain/repositories/model_catalog_repository.dart';
@@ -57,6 +58,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<ModelRemoteDataSource>(
     () => ModelRemoteDataSourceImpl(sl()),
   );
+  sl.registerLazySingleton<ModelFileStore>(ModelFileStoreImpl.new);
   sl.registerLazySingleton<ImagePickerDataSource>(
     ImagePickerDataSourceImpl.new,
   );
@@ -72,7 +74,7 @@ Future<void> initDependencies() async {
     () => ConsentRepositoryImpl(sl()),
   );
   sl.registerLazySingleton<ModelCatalogRepository>(
-    () => ModelCatalogRepositoryImpl(sl()),
+    () => ModelCatalogRepositoryImpl(sl(), remote: sl(), files: sl()),
   );
   sl.registerLazySingleton<ScanRepository>(
     () => ScanRepositoryImpl(

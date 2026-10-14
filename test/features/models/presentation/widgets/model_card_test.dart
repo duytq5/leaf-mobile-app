@@ -45,6 +45,26 @@ void main() {
     expect(find.textContaining('Rust level'), findsNothing);
   });
 
+  testWidgets('a released model shows the display name of each class',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: ModelCard(
+            model: releasedModel,
+            selected: true,
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('Rust'), findsOneWidget);
+    expect(find.text('healthy'), findsNothing);
+  });
+
   testWidgets('shows six chips for the durian model', (tester) async {
     await pump(tester, selected: false, durian: true);
 
