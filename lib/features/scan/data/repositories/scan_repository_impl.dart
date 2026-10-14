@@ -60,7 +60,11 @@ class ScanRepositoryImpl implements ScanRepository {
       final probabilities = softmax(logits);
       final scores = <ClassScore>[
         for (var i = 0; i < model.labels.length; i++)
-          ClassScore(model.labels[i], probabilities[i]),
+          ClassScore(
+            model.labelNames[i],
+            probabilities[i],
+            code: model.labels[i],
+          ),
       ]..sort((a, b) => b.probability.compareTo(a.probability));
       stopwatch.stop();
 

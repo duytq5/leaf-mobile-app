@@ -142,7 +142,7 @@ See `assets/models/README.md`. Never commit a model file. Produce both files wit
 | flutter_bloc for every screen | Done. |
 | The coffee model and the durian model | Done. Both verified on real images. |
 | 189 unit and widget tests, 3 integration tests | Done. All pass. |
-| The model download over the network | Not started. Stage 2. |
+| The model download over the network | Done. `GET /v1/crops`, then `GET /v1/devices/config`; SHA-256 checked; the previous version stays as the fallback; bundled models when nothing is released or the phone is offline. |
 | The upload of an image and a score | Not started. Stage 3. |
 | The Android SDK on this machine | Not installed. |
 | Latency on a real low-performance Android phone | Not measured. |

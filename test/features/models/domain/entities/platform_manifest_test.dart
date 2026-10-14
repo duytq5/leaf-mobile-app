@@ -95,6 +95,21 @@ void main() {
     });
   });
 
+  group('toPlatformJson', () {
+    test('writes a manifest that parses back to the same model', () {
+      final first = ModelManifest.fromPlatformJson(platformJson());
+      final again = ModelManifest.fromPlatformJson(first.toPlatformJson());
+
+      expect(again.modelVersionRef, first.modelVersionRef);
+      expect(again.sha256, first.sha256);
+      expect(again.bytes, first.bytes);
+      expect(again.labels, first.labels);
+      expect(again.displayNames, first.displayNames);
+      expect(again.input.height, 256);
+      expect(again.input.width, 224);
+    });
+  });
+
   group('a bundled manifest', () {
     test('shows each code as its own name', () {
       final manifest = ModelManifest.fromJson({

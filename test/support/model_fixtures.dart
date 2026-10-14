@@ -55,3 +55,36 @@ final durianModel = LeafModel(
   ),
   modelAsset: 'assets/models/durian/model.onnx',
 );
+
+/// A manifest as the platform releases it, with 2 classes.
+ModelManifest platformManifest({
+  required int version,
+  String model = 'leaf-disease-rocole',
+}) {
+  return ModelManifest.fromPlatformJson({
+    'model': model,
+    'version': version,
+    'format': 'onnx',
+    'sha256': 'ab' * 32,
+    'size_bytes': 3,
+    'preprocess': {
+      'input_size': [256, 256],
+      'mean': [0.485, 0.456, 0.406],
+      'std': [0.229, 0.224, 0.225],
+    },
+    'labels': [
+      {'code': 'healthy', 'display_name': 'Healthy'},
+      {'code': 'rust', 'display_name': 'Rust'},
+    ],
+  });
+}
+
+/// A model the app downloaded from the platform.
+final releasedModel = LeafModel(
+  id: 'rocole',
+  datasetName: 'rocole',
+  displayName: 'Lá cà phê (RoCoLe)',
+  dataset: 'Cà phê',
+  manifest: platformManifest(version: 3),
+  modelFile: '/models/rocole/3/model.onnx',
+);

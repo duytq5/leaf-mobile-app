@@ -22,8 +22,8 @@ class OnnxClassifierDataSourceImpl implements OnnxClassifierDataSource {
 
   final OnnxRuntime _runtime;
 
-  /// One session for each model id. A session creation costs hundreds of
-  /// milliseconds, so the map keeps the session for the next scan.
+  /// One session for each model id and version. A session creation costs
+  /// hundreds of milliseconds, so the map keeps the session for the next scan.
   final Map<String, OrtSession> _sessions = {};
 
   @override
@@ -55,16 +55,21 @@ class OnnxClassifierDataSourceImpl implements OnnxClassifierDataSource {
   }
 
   Future<OrtSession> _sessionFor(LeafModel model) async {
-    final open = _sessions[model.id];
+    final key = '${model.id}@${model.version}';
+    final open = _sessions[key];
     if (open != null) return open;
 
-    final session = await _runtime.createSessionFromAsset(
-      model.modelAsset,
-      // The CPU gives a repeatable latency on a low performance device. Add
-      // CORE_ML or NNAPI only after a measurement shows a benefit.
-      options: OrtSessionOptions(providers: [OrtProvider.CPU]),
-    );
-    _sessions[model.id] = session;
+    // The CPU gives a repeatable latency on a low performance device. Add
+    // CORE_ML or NNAPI only after a measurement shows a benefit.
+    final options = OrtSessionOptions(providers: [OrtProvider.CPU]);
+    final file = model.modelFile;
+    final session = file != null
+        ? await _runtime.createSession(file, options: options)
+        : await _runtime.createSessionFromAsset(
+            model.modelAsset!,
+            options: options,
+          );
+    _sessions[key] = session;
     return session;
   }
 
