@@ -101,6 +101,16 @@ fvm flutter test                   # run the unit and widget tests
 fvm flutter test integration_test/flow_test.dart -d <device-id>   # walk the app
 ```
 
+The app talks to the platform's Edge API. Sign-in needs the Cognito `mobile` app client id
+(CDK output `MobileClientId`). Pass it, and `Google` once the platform has Google sign-in:
+
+```bash
+fvm flutter run --dart-define=COGNITO_CLIENT_ID=<client id> \
+  --dart-define=COGNITO_IDENTITY_PROVIDER=Google
+```
+
+Without a client id the app still scans; only sending photos needs an account.
+
 The integration test runs the real models on a device. It proves that the ONNX files load
 on the platform, which a widget test cannot show.
 

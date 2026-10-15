@@ -45,6 +45,8 @@ dependencies:
   equatable: ^3.0.0
   fpdart: ^1.2.0
   get_it: ^9.3.0
+  flutter_web_auth_2: ^5.1.0
+  flutter_secure_storage: ^11.2.0
 
 dev_dependencies:
   flutter_test:

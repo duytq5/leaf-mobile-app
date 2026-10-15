@@ -33,3 +33,13 @@ class ImageFailure extends Failure {
 class PermissionFailure extends Failure {
   const PermissionFailure(super.message);
 }
+
+/// The user is not signed in, or the sign-in did not finish.
+class AuthFailure extends Failure {
+  const AuthFailure(super.message);
+}
+
+/// The phone is offline or the server does not answer.
+class NetworkFailure extends Failure {
+  const NetworkFailure(super.message);
+}
