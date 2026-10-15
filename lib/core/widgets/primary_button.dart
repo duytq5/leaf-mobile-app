@@ -53,8 +53,8 @@ class SecondaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
 
-  /// A neutral button has a grey outline. The design uses it for the report
-  /// action, which must not compete with the continue action.
+  /// A neutral button has a grey outline, for an action that must not compete
+  /// with the continue action.
   final bool neutral;
 
   @override

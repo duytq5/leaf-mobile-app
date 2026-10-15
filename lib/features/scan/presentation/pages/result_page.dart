@@ -17,7 +17,6 @@ class ResultPage extends StatefulWidget {
     required this.model,
     required this.onBack,
     required this.onContinue,
-    required this.onReport,
     super.key,
   });
 
@@ -25,7 +24,6 @@ class ResultPage extends StatefulWidget {
   final LeafModel model;
   final VoidCallback onBack;
   final VoidCallback onContinue;
-  final VoidCallback onReport;
 
   @override
   State<ResultPage> createState() => _ResultPageState();
@@ -73,18 +71,7 @@ class _ResultPageState extends State<ResultPage> {
       ),
       bottom: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          children: [
-            PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
-            const SizedBox(height: 10),
-            SecondaryButton(
-              label: 'Report wrong label',
-              icon: Icons.flag_outlined,
-              neutral: true,
-              onPressed: widget.onReport,
-            ),
-          ],
-        ),
+        child: PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
       ),
     );
   }

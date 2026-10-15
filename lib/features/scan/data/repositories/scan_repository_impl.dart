@@ -6,11 +6,9 @@ import '../../../../core/error/failures.dart';
 import '../../../models/domain/entities/leaf_model.dart';
 import '../../domain/entities/class_score.dart';
 import '../../domain/entities/image_source_kind.dart';
-import '../../domain/entities/label_correction.dart';
 import '../../domain/entities/scan_result.dart';
 import '../../domain/entities/uncertainty.dart';
 import '../../domain/repositories/scan_repository.dart';
-import '../datasources/correction_local_data_source.dart';
 import '../datasources/image_picker_data_source.dart';
 import '../datasources/onnx_classifier_data_source.dart';
 import '../datasources/preprocessor.dart';
@@ -19,12 +17,10 @@ class ScanRepositoryImpl implements ScanRepository {
   ScanRepositoryImpl({
     required this.picker,
     required this.classifier,
-    required this.corrections,
   });
 
   final ImagePickerDataSource picker;
   final OnnxClassifierDataSource classifier;
-  final CorrectionLocalDataSource corrections;
 
   @override
   Future<Either<Failure, Uint8List>> pickImage(ImageSourceKind source) async {
@@ -82,18 +78,6 @@ class ScanRepositoryImpl implements ScanRepository {
       return Left(ImageFailure(error.message));
     } catch (error) {
       return Left(ModelFailure('the model does not run: $error'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, Unit>> saveCorrection(
-    LabelCorrection correction,
-  ) async {
-    try {
-      await corrections.append(correction);
-      return const Right(unit);
-    } catch (error) {
-      return Left(CacheFailure('the app cannot store the correction: $error'));
     }
   }
 }

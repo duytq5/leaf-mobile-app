@@ -1,8 +1,9 @@
 # LeafScan
 
 The app runs the thesis leaf disease classifier on a phone. The user selects a model,
-takes a photo, and reads the predicted class. The user can also correct a wrong label.
-A correction is a label from a person, which the next active learning round can use.
+takes a photo, and reads the predicted class. A signed-in user also sends the photo and
+the prediction to the platform, where the next active learning round can select it for
+an expert to label.
 
 The design canvas is "LeafScan — Leaf Disease App". The stage 1 specification is
 `docs/superpowers/specs/2026-09-20-mobile-cv-app-design.md`. The implementation plan is
@@ -29,7 +30,7 @@ lib/
   features/
     consent/       the upload agreement
     models/        the model catalog and the picker
-    scan/          the capture, the result and the correction
+    scan/          the capture and the result
   injection_container.dart
   app.dart         the routes
   main.dart
@@ -55,7 +56,6 @@ holds its own colour also fails, because a colour belongs in `AppColors`.
 | 1 · Choose model | `models/presentation/pages/model_catalog_page.dart` | Done. |
 | 2 · Add photo | `scan/presentation/pages/capture_page.dart` | Done. |
 | 3 · Result | `scan/presentation/pages/result_page.dart` | Done. |
-| 4 · Report wrong label | `scan/presentation/pages/report_page.dart` | Done. |
 
 ## The labels come from the manifest
 
@@ -65,11 +65,10 @@ RoCoLe puts the rust levels in one folder. The durian card lists 5 labels. The d
 6 folders.
 
 Therefore every screen reads the labels from `manifest.json`. No screen holds a label in
-its code. The card, the result list and the correction rows all follow the model that
-runs. Three tests hold this rule:
+its code. The card and the result list follow the model that
+runs. Two tests hold this rule:
 
 - `model_card_test.dart` asserts 3 chips for coffee and 6 for durian.
-- `report_page_test.dart` asserts 4 rows for coffee and 7 for durian.
 - `scan_repository_impl_test.dart` asserts a failure when the count of logits differs
   from the count of labels.
 
@@ -146,7 +145,7 @@ See `assets/models/README.md`. Never commit a model file. Produce both files wit
 
 | Item | State |
 |---|---|
-| The six screens of the design | Done. |
+| The screens of the design | Done. The Report wrong label screen was dropped: experts label in Label Studio. |
 | The app icon and the name | Done. Both platforms. |
 | Clean Architecture with three layers for each feature | Done. |
 | flutter_bloc for every screen | Done. |
