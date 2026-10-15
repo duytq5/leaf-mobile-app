@@ -7,6 +7,7 @@ import 'features/consent/presentation/pages/consent_page.dart';
 import 'features/models/domain/entities/leaf_model.dart';
 import 'features/models/presentation/bloc/model_catalog_bloc.dart';
 import 'features/models/presentation/pages/model_catalog_page.dart';
+import 'features/outbox/presentation/bloc/outbox_bloc.dart';
 import 'features/scan/domain/entities/scan_result.dart';
 import 'features/scan/presentation/bloc/scan_bloc.dart';
 import 'features/scan/presentation/pages/capture_page.dart';
@@ -19,11 +20,17 @@ class LeafScanApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'LeafScan',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      home: const ConsentGate(),
+    // The outbox lives as long as the app, so a scan is sent even after the
+    // user leaves the result screen.
+    return BlocProvider(
+      lazy: false,
+      create: (_) => sl<OutboxBloc>()..add(const OutboxStarted()),
+      child: MaterialApp(
+        title: 'LeafScan',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        home: const ConsentGate(),
+      ),
     );
   }
 }
@@ -99,6 +106,9 @@ class CaptureRoute extends StatelessWidget {
           model: model,
           onBack: () => Navigator.of(context).pop(),
           onResult: (result) {
+            context.read<OutboxBloc>().add(
+              OutboxScanQueued(result: result, model: model),
+            );
             Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => ResultRoute(result: result, model: model),
@@ -123,11 +133,22 @@ class ResultRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ResultPage(
-      result: result,
-      model: model,
-      onBack: () => Navigator.of(context).pop(),
-      onContinue: () => Navigator.of(context).pop(),
+    return BlocConsumer<OutboxBloc, OutboxState>(
+      listenWhen: (previous, current) =>
+          current.message != null && previous.message != current.message,
+      listener: (context, state) => ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(state.message!))),
+      builder: (context, state) => ResultPage(
+        result: result,
+        model: model,
+        signedIn: state.signedIn,
+        pending: state.pending,
+        onSignIn: () =>
+            context.read<OutboxBloc>().add(const OutboxSignInRequested()),
+        onBack: () => Navigator.of(context).pop(),
+        onContinue: () => Navigator.of(context).pop(),
+      ),
     );
   }
 }

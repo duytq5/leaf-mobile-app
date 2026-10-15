@@ -9,6 +9,7 @@ import 'features/auth/data/datasources/token_store.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
 import 'features/auth/domain/repositories/auth_repository.dart';
 import 'features/auth/domain/usecases/get_access_token.dart';
+import 'features/auth/domain/usecases/is_signed_in.dart';
 import 'features/auth/domain/usecases/sign_in.dart';
 import 'features/auth/domain/usecases/sign_out.dart';
 import 'features/consent/data/datasources/consent_local_data_source.dart';
@@ -26,6 +27,13 @@ import 'features/models/domain/usecases/get_models.dart';
 import 'features/models/domain/usecases/get_selected_model.dart';
 import 'features/models/domain/usecases/select_model.dart';
 import 'features/models/presentation/bloc/model_catalog_bloc.dart';
+import 'features/outbox/data/datasources/captures_remote_data_source.dart';
+import 'features/outbox/data/datasources/connectivity_data_source.dart';
+import 'features/outbox/data/datasources/outbox_local_data_source.dart';
+import 'features/outbox/data/repositories/outbox_repository_impl.dart';
+import 'features/outbox/domain/repositories/outbox_repository.dart';
+import 'features/outbox/domain/usecases/outbox_usecases.dart';
+import 'features/outbox/presentation/bloc/outbox_bloc.dart';
 import 'features/scan/data/datasources/image_picker_data_source.dart';
 import 'features/scan/data/datasources/onnx_classifier_data_source.dart';
 import 'features/scan/data/repositories/scan_repository_impl.dart';
@@ -84,6 +92,13 @@ Future<void> initDependencies() async {
     BrowserAuthDataSourceImpl.new,
   );
   sl.registerLazySingleton<TokenStore>(TokenStoreImpl.new);
+  sl.registerLazySingleton<OutboxLocalDataSource>(OutboxLocalDataSourceImpl.new);
+  sl.registerLazySingleton<CapturesRemoteDataSource>(
+    () => CapturesRemoteDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<ConnectivityDataSource>(
+    ConnectivityDataSourceImpl.new,
+  );
   sl.registerLazySingleton<ImagePickerDataSource>(
     ImagePickerDataSourceImpl.new,
   );
@@ -106,6 +121,14 @@ Future<void> initDependencies() async {
       settings: sl(),
     ),
   );
+  sl.registerLazySingleton<OutboxRepository>(
+    () => OutboxRepositoryImpl(
+      local: sl(),
+      remote: sl(),
+      auth: sl(),
+      connectivity: sl(),
+    ),
+  );
   sl.registerLazySingleton<ScanRepository>(
     () => ScanRepositoryImpl(
       picker: sl(),
@@ -122,6 +145,10 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => SignIn(sl()));
   sl.registerLazySingleton(() => SignOut(sl()));
   sl.registerLazySingleton(() => GetAccessToken(sl()));
+  sl.registerLazySingleton(() => IsSignedIn(sl()));
+  sl.registerLazySingleton(() => QueueScan(sl()));
+  sl.registerLazySingleton(() => SendQueuedScans(sl()));
+  sl.registerLazySingleton(() => CountQueuedScans(sl()));
   sl.registerLazySingleton(() => PickImage(sl()));
   sl.registerLazySingleton(() => ClassifyImage(sl()));
 
@@ -132,6 +159,15 @@ Future<void> initDependencies() async {
       getModels: sl(),
       getSelectedModel: sl(),
       selectModel: sl(),
+    ),
+  );
+  sl.registerFactory(
+    () => OutboxBloc(
+      queueScan: sl(),
+      sendQueuedScans: sl(),
+      countQueuedScans: sl(),
+      signIn: sl(),
+      isSignedIn: sl(),
     ),
   );
   sl.registerFactory(() => ScanBloc(pickImage: sl(), classifyImage: sl()));

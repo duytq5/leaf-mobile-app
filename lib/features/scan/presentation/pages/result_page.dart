@@ -17,6 +17,9 @@ class ResultPage extends StatefulWidget {
     required this.model,
     required this.onBack,
     required this.onContinue,
+    this.signedIn = false,
+    this.pending = 0,
+    this.onSignIn,
     super.key,
   });
 
@@ -24,6 +27,13 @@ class ResultPage extends StatefulWidget {
   final LeafModel model;
   final VoidCallback onBack;
   final VoidCallback onContinue;
+
+  /// Whether the user can send photos. Only a released model's scan is sent.
+  final bool signedIn;
+
+  /// The scans that still wait on this phone.
+  final int pending;
+  final VoidCallback? onSignIn;
 
   @override
   State<ResultPage> createState() => _ResultPageState();
@@ -71,8 +81,54 @@ class _ResultPageState extends State<ResultPage> {
       ),
       bottom: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
+            if (widget.model.canUpload) ...[
+              const SizedBox(height: 10),
+              _SendStatus(
+                signedIn: widget.signedIn,
+                pending: widget.pending,
+                onSignIn: widget.onSignIn,
+              ),
+            ],
+          ],
+        ),
       ),
+    );
+  }
+}
+
+/// What happens to the photo: a sign-in button, or a line about the outbox.
+class _SendStatus extends StatelessWidget {
+  const _SendStatus({
+    required this.signedIn,
+    required this.pending,
+    required this.onSignIn,
+  });
+
+  final bool signedIn;
+  final int pending;
+  final VoidCallback? onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!signedIn) {
+      return SecondaryButton(
+        label: 'Sign in to send this photo',
+        icon: Icons.cloud_upload_outlined,
+        neutral: true,
+        onPressed: onSignIn,
+      );
+    }
+    return Text(
+      pending == 0
+          ? 'Photo sent. Thank you for helping.'
+          : '$pending ${pending == 1 ? 'photo waits' : 'photos wait'}. '
+                'They are sent when the phone is online.',
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 13, color: AppColors.muted),
     );
   }
 }
