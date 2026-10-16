@@ -2,16 +2,17 @@ import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:leaf_disease_mobile/core/error/api_exception.dart';
 import 'package:leaf_disease_mobile/core/error/failures.dart';
 import 'package:leaf_disease_mobile/features/models/data/datasources/model_catalog_local_data_source.dart';
 import 'package:leaf_disease_mobile/features/models/data/datasources/model_file_store.dart';
 import 'package:leaf_disease_mobile/features/models/data/datasources/model_remote_data_source.dart';
 import 'package:leaf_disease_mobile/features/models/data/repositories/model_catalog_repository_impl.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/catalog_entry.dart';
 import 'package:leaf_disease_mobile/features/models/domain/entities/crop.dart';
 import 'package:leaf_disease_mobile/features/models/domain/entities/device_config.dart';
 import 'package:leaf_disease_mobile/features/models/domain/entities/leaf_model.dart';
-import 'package:leaf_disease_mobile/features/models/domain/entities/model_manifest.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../support/model_fixtures.dart';
@@ -50,6 +51,14 @@ LeafModel _downloaded(int version) => LeafModel(
   modelFile: '/models/rocole/$version/model.onnx',
 );
 
+CatalogEntry _entry({LeafModel? installed, int? released = 3}) => CatalogEntry(
+  id: 'rocole',
+  displayName: 'Lá cà phê (RoCoLe)',
+  cropName: 'Cà phê',
+  releasedVersion: released,
+  installed: installed,
+);
+
 void main() {
   late MockLocal local;
   late MockRemote remote;
@@ -73,38 +82,116 @@ void main() {
       remote: remote,
       files: files,
     );
-    when(() => local.readCatalog())
-        .thenAnswer((_) async => [coffeeModel, durianModel]);
-    // Before any release the platform lists no crop.
-    when(() => remote.getCrops()).thenAnswer((_) async => []);
+    when(() => remote.getCrops()).thenAnswer((_) async => [_crop]);
+    when(() => files.readLatest('rocole')).thenAnswer((_) async => null);
     when(() => files.readAll()).thenAnswer((_) async => []);
+    when(() => remote.getDeviceConfig('rocole'))
+        .thenAnswer((_) async => _config());
+    when(() => remote.getManifest(any()))
+        .thenAnswer((_) async => platformManifest(version: 3));
+    when(
+      () => remote.download(any(), onProgress: any(named: 'onProgress')),
+    ).thenAnswer((_) async => _bytes);
+    when(
+      () => files.save(
+        crop: any(named: 'crop'),
+        dataset: any(named: 'dataset'),
+        manifest: any(named: 'manifest'),
+        bytes: any(named: 'bytes'),
+      ),
+    ).thenAnswer((_) async => _downloaded(3));
   });
 
-  group('getModels with a released model', () {
-    setUp(() {
-      when(() => remote.getCrops()).thenAnswer((_) async => [_crop]);
-      when(() => files.readLatest('rocole')).thenAnswer((_) async => null);
-      when(() => remote.getDeviceConfig('rocole'))
-          .thenAnswer((_) async => _config());
-      when(() => remote.getManifest(any()))
-          .thenAnswer((_) async => platformManifest(version: 3));
-      when(() => remote.download(any())).thenAnswer((_) async => _bytes);
-      when(
-        () => files.save(
-          crop: any(named: 'crop'),
-          dataset: any(named: 'dataset'),
-          manifest: any(named: 'manifest'),
-          bytes: any(named: 'bytes'),
-        ),
-      ).thenAnswer((_) async => _downloaded(3));
+  group('getCatalog', () {
+    test('lists a released model that is not on the phone', () async {
+      final result = await repository.getCatalog();
+
+      final entry = result.getRight().toNullable()!.single;
+      expect(entry, _entry());
+      expect(entry.status, ModelStatus.notDownloaded);
     });
 
-    test('downloads the current model and lists it alone', () async {
-      final result = await repository.getModels();
+    test('downloads nothing while it builds the list', () async {
+      await repository.getCatalog();
 
-      expect(result.getRight().toNullable(), [_downloaded(3)]);
-      verify(() => remote.download(Uri.parse('https://s3.test/model.onnx')))
-          .called(1);
+      verifyNever(() => remote.getDeviceConfig(any()));
+      verifyNever(
+        () => remote.download(any(), onProgress: any(named: 'onProgress')),
+      );
+    });
+
+    test('a model of the current version is downloaded', () async {
+      when(() => files.readLatest('rocole'))
+          .thenAnswer((_) async => _downloaded(3));
+
+      final entry = (await repository.getCatalog()).getRight().toNullable()!;
+
+      expect(entry.single.status, ModelStatus.downloaded);
+    });
+
+    test('an older model on the phone has an update', () async {
+      when(() => files.readLatest('rocole'))
+          .thenAnswer((_) async => _downloaded(2));
+
+      final entry = (await repository.getCatalog()).getRight().toNullable()!;
+
+      expect(entry.single.status, ModelStatus.updateAvailable);
+      expect(entry.single.installed, _downloaded(2));
+    });
+
+    test('a model on disk that is no longer released stays listed', () async {
+      when(() => remote.getCrops()).thenAnswer((_) async => []);
+      when(() => files.readAll()).thenAnswer((_) async => [_downloaded(2)]);
+
+      final entries = (await repository.getCatalog()).getRight().toNullable()!;
+
+      expect(entries, [_entry(installed: _downloaded(2), released: null)]);
+      expect(entries.single.status, ModelStatus.downloaded);
+    });
+
+    test('lists nothing before the platform releases a model', () async {
+      when(() => remote.getCrops()).thenAnswer((_) async => []);
+
+      final result = await repository.getCatalog();
+
+      expect(result.getRight().toNullable(), isEmpty);
+    });
+
+    test('offline it lists the models on disk', () async {
+      when(() => remote.getCrops())
+          .thenThrow(const ApiException.offline('no network'));
+      when(() => files.readAll()).thenAnswer((_) async => [_downloaded(2)]);
+
+      final entries = (await repository.getCatalog()).getRight().toNullable()!;
+
+      expect(entries, [_entry(installed: _downloaded(2), released: null)]);
+    });
+
+    test('offline with nothing on disk says the phone is offline', () async {
+      when(() => remote.getCrops())
+          .thenThrow(const ApiException.offline('no network'));
+
+      final result = await repository.getCatalog();
+
+      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
+    });
+
+    test('an unexpected error becomes a ModelFailure', () async {
+      when(() => remote.getCrops()).thenThrow(Exception('bad body'));
+
+      final result = await repository.getCatalog();
+
+      expect(result.getLeft().toNullable(), isA<ModelFailure>());
+    });
+  });
+
+  group('download', () {
+    setUp(() => repository.getCatalog());
+
+    test('downloads, checks and stores the current release', () async {
+      final result = await repository.download('rocole');
+
+      expect(result.getRight().toNullable(), _downloaded(3));
       verify(
         () => files.save(
           crop: _crop,
@@ -115,26 +202,30 @@ void main() {
       ).called(1);
     });
 
-    test('a cached model of the current version needs no download', () async {
-      when(() => files.readLatest('rocole'))
-          .thenAnswer((_) async => _downloaded(3));
+    test('passes the progress on', () async {
+      when(
+        () => remote.download(any(), onProgress: any(named: 'onProgress')),
+      ).thenAnswer((invocation) async {
+        final report =
+            invocation.namedArguments[#onProgress] as void Function(double?);
+        report(0.5);
+        report(1);
+        return _bytes;
+      });
+      final seen = <double?>[];
 
-      final result = await repository.getModels();
+      await repository.download('rocole', onProgress: seen.add);
 
-      expect(result.getRight().toNullable(), [_downloaded(3)]);
-      verifyNever(() => remote.getDeviceConfig(any()));
-      verifyNever(() => remote.download(any()));
+      expect(seen, [0.5, 1]);
     });
 
-    test('a file with the wrong hash is not saved; the cache stays', () async {
-      when(() => files.readLatest('rocole'))
-          .thenAnswer((_) async => _downloaded(2));
+    test('a file with the wrong hash is not stored', () async {
       when(() => remote.getDeviceConfig('rocole'))
           .thenAnswer((_) async => _config(sha: 'cd' * 32));
 
-      final result = await repository.getModels();
+      final result = await repository.download('rocole');
 
-      expect(result.getRight().toNullable(), [_downloaded(2)]);
+      expect(result.getLeft().toNullable(), isA<ModelFailure>());
       verifyNever(
         () => files.save(
           crop: any(named: 'crop'),
@@ -145,100 +236,47 @@ void main() {
       );
     });
 
-    test('a failed download keeps the previous version', () async {
-      when(() => files.readLatest('rocole'))
-          .thenAnswer((_) async => _downloaded(2));
-      when(() => remote.download(any()))
-          .thenThrow(const ApiException(status: 403, message: 'expired'));
+    test('a failed request says why', () async {
+      when(
+        () => remote.download(any(), onProgress: any(named: 'onProgress')),
+      ).thenThrow(const ApiException(status: 403, message: 'expired'));
 
-      final result = await repository.getModels();
+      final result = await repository.download('rocole');
 
-      expect(result.getRight().toNullable(), [_downloaded(2)]);
+      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
     });
 
-    test('a dataset with no model and no cache falls back to bundled', () async {
+    test('a dataset with no release cannot be downloaded', () async {
       when(() => remote.getDeviceConfig('rocole')).thenAnswer((_) async => null);
 
-      final result = await repository.getModels();
+      final result = await repository.download('rocole');
 
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
+      expect(result.getLeft().toNullable(), isA<ModelFailure>());
     });
 
-    test('the list is read once for getModels and getSelected', () async {
-      when(() => local.readSelectedId()).thenReturn('rocole');
-
-      await repository.getModels();
-      final selected = await repository.getSelected();
-
-      expect(selected.getRight().toNullable(), _downloaded(3));
-      verify(() => remote.getCrops()).called(1);
-    });
-  });
-
-  group('getModels offline', () {
-    setUp(() {
-      when(() => remote.getCrops())
-          .thenThrow(const ApiException.offline('no network'));
-    });
-
-    test('lists the models on disk', () async {
-      when(() => files.readAll()).thenAnswer((_) async => [_downloaded(2)]);
-
-      final result = await repository.getModels();
-
-      expect(result.getRight().toNullable(), [_downloaded(2)]);
-    });
-
-    test('with nothing on disk lists the bundled models', () async {
-      final result = await repository.getModels();
-
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
-    });
-  });
-
-  test('a platform manifest type is what the store receives', () {
-    expect(platformManifest(version: 3), isA<ModelManifest>());
-  });
-
-  group('getModels', () {
-    test('returns every model of the catalog', () async {
-      final result = await repository.getModels();
-
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
-    });
-
-    test('an exception becomes a ModelFailure', () async {
-      when(() => local.readCatalog()).thenThrow(Exception('no asset'));
-
-      final result = await repository.getModels();
+    test('a dataset the list does not hold cannot be downloaded', () async {
+      final result = await repository.download('durian');
 
       expect(result.getLeft().toNullable(), isA<ModelFailure>());
     });
   });
 
-  group('getSelected', () {
-    test('returns the stored model', () async {
-      when(() => local.readSelectedId()).thenReturn('durian');
+  group('delete', () {
+    test('removes the model from the phone', () async {
+      when(() => files.delete('rocole')).thenAnswer((_) async {});
 
-      final result = await repository.getSelected();
+      final result = await repository.delete('rocole');
 
-      expect(result.getRight().toNullable(), durianModel);
+      expect(result, const Right<Failure, Unit>(unit));
+      verify(() => files.delete('rocole')).called(1);
     });
 
-    test('with no stored id it returns the first model', () async {
-      when(() => local.readSelectedId()).thenReturn(null);
+    test('an exception becomes a CacheFailure', () async {
+      when(() => files.delete('rocole')).thenThrow(Exception('busy'));
 
-      final result = await repository.getSelected();
+      final result = await repository.delete('rocole');
 
-      expect(result.getRight().toNullable(), coffeeModel);
-    });
-
-    test('an id that names no model falls back to the first', () async {
-      when(() => local.readSelectedId()).thenReturn('a_removed_model');
-
-      final result = await repository.getSelected();
-
-      expect(result.getRight().toNullable(), coffeeModel);
+      expect(result.getLeft().toNullable(), isA<CacheFailure>());
     });
   });
 
@@ -250,6 +288,12 @@ void main() {
 
       expect(result.isRight(), isTrue);
       verify(() => local.writeSelectedId('durian')).called(1);
+    });
+
+    test('reads the stored id', () {
+      when(() => local.readSelectedId()).thenReturn('rocole');
+
+      expect(repository.selectedId(), 'rocole');
     });
 
     test('an exception becomes a CacheFailure', () async {

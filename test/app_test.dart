@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:leaf_disease_mobile/app.dart';
+import 'package:leaf_disease_mobile/features/auth/presentation/pages/sign_in_page.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/catalog_entry.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/bloc/consent_bloc.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/pages/consent_page.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/bloc/model_catalog_bloc.dart';
@@ -27,6 +29,7 @@ class MockOutboxBloc extends MockBloc<OutboxEvent, OutboxState>
 void main() {
   late MockConsentBloc consentBloc;
   late MockModelCatalogBloc catalogBloc;
+  late MockOutboxBloc outboxBloc;
 
   setUp(() {
     consentBloc = MockConsentBloc();
@@ -34,13 +37,21 @@ void main() {
     when(() => catalogBloc.state).thenReturn(
       ModelCatalogState(
         status: ModelCatalogStatus.ready,
-        models: [coffeeModel, durianModel],
+        entries: [
+          CatalogEntry(
+            id: 'coffee_rocole',
+            displayName: 'Coffee Leaf',
+            cropName: 'RoCoLe',
+            installed: coffeeModel,
+          ),
+        ],
         selectedId: 'coffee_rocole',
       ),
     );
 
-    final outboxBloc = MockOutboxBloc();
-    when(() => outboxBloc.state).thenReturn(const OutboxState());
+    outboxBloc = MockOutboxBloc();
+    when(() => outboxBloc.state)
+        .thenReturn(const OutboxState(ready: true, signedIn: true));
 
     GetIt.instance
       ..registerFactory<OutboxBloc>(() => outboxBloc)
@@ -88,6 +99,54 @@ void main() {
     expect(find.byType(ConsentPage), findsNothing);
     expect(find.byType(ModelCatalogPage), findsOneWidget);
     expect(find.text('Choose an AI model'), findsOneWidget);
+  });
+
+  testWidgets('asks a signed-out user to sign in before the models',
+      (tester) async {
+    usePhoneFrame(tester);
+    addTearDown(() => resetPhoneFrame(tester));
+    when(() => consentBloc.state).thenReturn(
+      const ConsentState(status: ConsentStatus.accepted, checked: true),
+    );
+    when(() => outboxBloc.state).thenReturn(const OutboxState(ready: true));
+
+    await tester.pumpWidget(const LeafScanApp());
+    await tester.pump();
+
+    expect(find.byType(SignInPage), findsOneWidget);
+    expect(find.byType(ModelCatalogPage), findsNothing);
+  });
+
+  testWidgets('the sign-in button asks the outbox to sign in', (tester) async {
+    usePhoneFrame(tester);
+    addTearDown(() => resetPhoneFrame(tester));
+    when(() => consentBloc.state).thenReturn(
+      const ConsentState(status: ConsentStatus.accepted, checked: true),
+    );
+    when(() => outboxBloc.state).thenReturn(const OutboxState(ready: true));
+
+    await tester.pumpWidget(const LeafScanApp());
+    await tester.pump();
+    await tester.tap(find.text('Sign in with Google'));
+
+    verify(() => outboxBloc.add(const OutboxSignInRequested())).called(1);
+  });
+
+  testWidgets('waits for the stored session before it decides',
+      (tester) async {
+    usePhoneFrame(tester);
+    addTearDown(() => resetPhoneFrame(tester));
+    when(() => consentBloc.state).thenReturn(
+      const ConsentState(status: ConsentStatus.accepted, checked: true),
+    );
+    when(() => outboxBloc.state).thenReturn(const OutboxState());
+
+    await tester.pumpWidget(const LeafScanApp());
+    await tester.pump();
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(SignInPage), findsNothing);
+    expect(find.byType(ModelCatalogPage), findsNothing);
   });
 
   test('the service locator registers every unit the app needs', () {

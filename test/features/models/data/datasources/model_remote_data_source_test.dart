@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:leaf_disease_mobile/core/error/api_exception.dart';
 import 'package:leaf_disease_mobile/features/models/data/datasources/model_remote_data_source.dart';
@@ -25,6 +27,23 @@ const _config = {
   'manifest_url': 'https://s3.test/edge/leaf-disease-rocole/3/manifest.json',
   'model_url': 'https://s3.test/edge/leaf-disease-rocole/3/model.onnx',
   'expires_in': 900,
+};
+
+const _manifest = {
+  'model': 'leaf-disease-rocole',
+  'version': 3,
+  'format': 'onnx',
+  'sha256': 'abababababababababababababababababababababababababababababababab',
+  'size_bytes': 10,
+  'preprocess': {
+    'input_size': [256, 256],
+    'mean': [0.485, 0.456, 0.406],
+    'std': [0.229, 0.224, 0.225],
+  },
+  'labels': [
+    {'code': 'healthy', 'display_name': 'Healthy'},
+    {'code': 'rust', 'display_name': 'Rust'},
+  ],
 };
 
 void main() {
@@ -146,6 +165,45 @@ void main() {
 
       expect(manifest.modelVersionRef, 'leaf-disease-rocole/3');
       expect(manifest.displayNames, ['Healthy', 'Rust']);
+    });
+
+    test('getManifest reads a JSON body that S3 serves as binary', () async {
+      final adapter = FakeHttpAdapter({
+        'GET https://s3.test/m.json': FakeResponse(
+          200,
+          utf8.encode(jsonEncode(_manifest)),
+          headers: const {
+            'content-type': ['binary/octet-stream'],
+          },
+        ),
+      });
+
+      final manifest = await ModelRemoteDataSourceImpl(fakeDio(adapter))
+          .getManifest(Uri.parse('https://s3.test/m.json'));
+
+      expect(manifest.modelVersionRef, 'leaf-disease-rocole/3');
+      expect(manifest.displayNames, ['Healthy', 'Rust']);
+    });
+
+    test('download reports its progress as a fraction', () async {
+      final adapter = FakeHttpAdapter({
+        'GET https://s3.test/model.onnx': const FakeResponse(
+          200,
+          [1, 2, 3, 4],
+          headers: {
+            'content-length': ['4'],
+          },
+        ),
+      });
+      final seen = <double?>[];
+
+      await ModelRemoteDataSourceImpl(fakeDio(adapter)).download(
+        Uri.parse('https://s3.test/model.onnx'),
+        onProgress: seen.add,
+      );
+
+      expect(seen, isNotEmpty);
+      expect(seen.last, 1.0);
     });
 
     test('download returns the bytes at the link', () async {
