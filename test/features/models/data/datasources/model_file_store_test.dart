@@ -127,4 +127,20 @@ void main() {
     expect(read!.manifest, isA<ModelManifest>());
     expect(read.manifest.released, isTrue);
   });
+
+  test('delete removes every version of a dataset', () async {
+    await saveVersion(2);
+    await saveVersion(3);
+
+    await store.delete('rocole');
+
+    expect(await store.readLatest('rocole'), isNull);
+    expect(await store.readAll(), isEmpty);
+  });
+
+  test('delete of a dataset that is not on disk does nothing', () async {
+    await store.delete('rocole');
+
+    expect(await store.readAll(), isEmpty);
+  });
 }

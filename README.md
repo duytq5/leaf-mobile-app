@@ -111,9 +111,12 @@ fvm flutter run --dart-define=COGNITO_CLIENT_ID=<client id> \
 The models open only after sign-in: after the agreement screen the app shows a "Sign in with
 Google" screen, and there is no way past it without an account.
 
-The app ships no model. It lists only the models the platform has released (`GET /v1/crops`),
-with the platform's readable crop, model and class names, and says "No models yet" until
-there is a release. Downloaded models stay on the phone, so they still run offline.
+The app ships no model. It lists the models the platform has released (`GET /v1/crops`), with
+the platform's readable crop, model and class names, and downloads nothing on its own. Each
+card says whether the model is on the phone and offers **Download**, **Update to vN** or
+**Delete**; a download shows its progress, and its SHA-256 is checked before the model is kept.
+The list says "No models yet" until there is a release. Downloaded models stay on the phone,
+so they still run offline.
 
 The integration test walks the real app on a device, against the real Edge API.
 
@@ -155,7 +158,7 @@ The app ships no model file: the platform releases each model, and the app downl
 | flutter_bloc for every screen | Done. |
 | The coffee model and the durian model | Done. Both verified on real images. |
 | 189 unit and widget tests, 3 integration tests | Done. All pass. |
-| The model download over the network | Done. `GET /v1/crops`, then `GET /v1/devices/config`; SHA-256 checked; the previous version stays as the fallback; no model ships in the app, so before a release the list says "No models yet". |
+| The model download over the network | Done. `GET /v1/crops`, then `GET /v1/devices/config`; SHA-256 checked; the previous version stays as the fallback; models download only when the user taps Download or Update; before a release the list says "No models yet". |
 | The upload of an image and a score | Done. Every scan of a released model waits in an outbox on the phone and is sent (`POST /v1/captures`, then a presigned PUT to S3) when the user is signed in and the phone is online. |
 | The Android SDK on this machine | Not installed. |
 | Latency on a real low-performance Android phone | Not measured. |

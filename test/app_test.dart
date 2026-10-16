@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:leaf_disease_mobile/app.dart';
 import 'package:leaf_disease_mobile/features/auth/presentation/pages/sign_in_page.dart';
+import 'package:leaf_disease_mobile/features/models/domain/entities/catalog_entry.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/bloc/consent_bloc.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/pages/consent_page.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/bloc/model_catalog_bloc.dart';
@@ -36,7 +37,14 @@ void main() {
     when(() => catalogBloc.state).thenReturn(
       ModelCatalogState(
         status: ModelCatalogStatus.ready,
-        models: [coffeeModel, durianModel],
+        entries: [
+          CatalogEntry(
+            id: 'coffee_rocole',
+            displayName: 'Coffee Leaf',
+            cropName: 'RoCoLe',
+            installed: coffeeModel,
+          ),
+        ],
         selectedId: 'coffee_rocole',
       ),
     );

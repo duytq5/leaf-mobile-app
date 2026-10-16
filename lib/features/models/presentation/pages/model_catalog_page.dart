@@ -20,8 +20,11 @@ class ModelCatalogPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.ground,
       body: BlocConsumer<ModelCatalogBloc, ModelCatalogState>(
+        // An empty list shows its failure in the body, so the snackbar is for
+        // the rest: a failed download or delete.
         listenWhen: (previous, current) =>
-            current.status == ModelCatalogStatus.failure &&
+            current.message != null &&
+            current.entries.isNotEmpty &&
             previous.message != current.message,
         listener: (context, state) {
           if (state.message != null) {
@@ -111,23 +114,55 @@ class _Body extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.models.isEmpty) return _NoModel(message: state.message);
+    if (state.entries.isEmpty) return _NoModel(message: state.message);
 
+    final bloc = context.read<ModelCatalogBloc>();
     return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: state.models.length,
+      itemCount: state.entries.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        final model = state.models[index];
+        final entry = state.entries[index];
         return ModelCard(
-          model: model,
-          selected: model.id == state.selected?.id,
-          onTap: () =>
-              context.read<ModelCatalogBloc>().add(ModelSelected(model.id)),
+          entry: entry,
+          selected:
+              entry.installed != null && entry.id == state.selected?.id,
+          downloading: state.isDownloading(entry.id),
+          progress: state.progress[entry.id],
+          onTap: () => bloc.add(ModelSelected(entry.id)),
+          onDownload: () => bloc.add(ModelDownloadRequested(entry.id)),
+          onDelete: () async {
+            if (await _confirmDelete(context, entry.displayName)) {
+              bloc.add(ModelDeleteRequested(entry.id));
+            }
+          },
         );
       },
     );
   }
+}
+
+Future<bool> _confirmDelete(BuildContext context, String name) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Delete $name?'),
+      content: const Text(
+        'The model leaves this phone. You can download it again later.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+  return confirmed ?? false;
 }
 
 /// The app ships no model, so before the platform releases one, or offline
@@ -198,9 +233,11 @@ class _Footer extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: PrimaryButton(
-          label: selected == null
+          label: selected != null
+              ? 'Use ${selected.displayName} model'
+              : state.entries.isEmpty
               ? 'Choose a model'
-              : 'Use ${selected.displayName} model',
+              : 'Download a model to start',
           onPressed: selected == null ? null : () => onContinue(selected),
         ),
       ),

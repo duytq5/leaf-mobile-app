@@ -21,6 +21,9 @@ abstract class ModelFileStore {
   /// Returns the highest complete version of every dataset on disk.
   Future<List<LeafModel>> readAll();
 
+  /// Removes every version of [dataset]. A dataset not on disk is fine.
+  Future<void> delete(String dataset);
+
   Future<LeafModel> save({
     required Crop crop,
     required CropDataset dataset,
@@ -61,6 +64,12 @@ class ModelFileStoreImpl implements ModelFileStore {
       if (model != null) models.add(model);
     }
     return models..sort((a, b) => a.id.compareTo(b.id));
+  }
+
+  @override
+  Future<void> delete(String dataset) async {
+    final dir = await _datasetDir(dataset);
+    if (dir.existsSync()) dir.deleteSync(recursive: true);
   }
 
   @override
