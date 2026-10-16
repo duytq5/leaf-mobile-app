@@ -108,7 +108,8 @@ fvm flutter run --dart-define=COGNITO_CLIENT_ID=<client id> \
   --dart-define=COGNITO_IDENTITY_PROVIDER=Google
 ```
 
-Without a client id the app still scans; only sending photos needs an account.
+The models open only after sign-in: after the agreement screen the app shows a "Sign in with
+Google" screen, and there is no way past it without an account.
 
 The integration test runs the real models on a device. It proves that the ONNX files load
 on the platform, which a widget test cannot show.

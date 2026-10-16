@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:leaf_disease_mobile/app.dart';
+import 'package:leaf_disease_mobile/features/auth/data/datasources/token_store.dart';
+import 'package:leaf_disease_mobile/features/auth/presentation/pages/sign_in_page.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/pages/consent_page.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/pages/model_catalog_page.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/widgets/model_card.dart';
@@ -21,6 +23,15 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await sl.reset();
     await initDependencies();
+    // The models open only for a signed-in user, and a test cannot sign in to
+    // Google, so every run starts with a stored session.
+    await sl<TokenStore>().write(
+      StoredSession(
+        accessToken: 'test',
+        refreshToken: 'test',
+        expiresAt: DateTime.utc(2100),
+      ),
+    );
   });
 
   testWidgets('the app walks from the agreement to the capture screen',
@@ -79,6 +90,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Durian Leaf · fold-3-best'), findsOneWidget);
+  });
+
+  testWidgets('a signed-out user meets the sign-in screen, not the models',
+      (tester) async {
+    await sl<TokenStore>().clear();
+    await tester.pumpWidget(const LeafScanApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Agree & continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SignInPage), findsOneWidget);
+    expect(find.byType(ModelCatalogPage), findsNothing);
+    await binding.takeScreenshot('00-sign-in');
   });
 
   testWidgets('the agreement is stored, so a restart skips it', (tester) async {

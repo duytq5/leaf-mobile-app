@@ -2,8 +2,8 @@ import 'package:fpdart/fpdart.dart';
 
 import '../../../../core/error/failures.dart';
 
-/// "Sign in to contribute": the app works without an account, and only an
-/// upload needs one (design doc, change 15).
+/// The models open only for a signed-in user: the app asks for Google sign-in
+/// right after the agreement screen.
 abstract class AuthRepository {
   /// Opens the Cognito managed login (authorization code + PKCE).
   Future<Either<Failure, Unit>> signIn();
