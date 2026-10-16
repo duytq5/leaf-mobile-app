@@ -1,6 +1,7 @@
 import 'package:crypto/crypto.dart';
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/error/api_exception.dart';
 import '../../../../core/error/failures.dart';
 import '../../domain/entities/crop.dart';
 import '../../domain/entities/leaf_model.dart';
@@ -14,8 +15,8 @@ import '../datasources/model_remote_data_source.dart';
 /// The platform's crops come first. A dataset whose cached model is the
 /// current release needs no download. A new release is downloaded, its SHA-256
 /// is checked, and it replaces the cached one, which stays as the fallback.
-/// Offline, the app lists the models on disk. With no release and nothing on
-/// disk, it lists the models that ship in the assets.
+/// Offline, the app lists the models on disk. The app ships no model, so with
+/// no release the list is empty, and offline with nothing on disk it fails.
 class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
   ModelCatalogRepositoryImpl(
     this._local, {
@@ -37,6 +38,12 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
       final models = await _currentModels();
       _models = models;
       return Right(models);
+    } on _Offline {
+      return const Left(
+        NetworkFailure(
+          'No connection. Connect to the internet to download a model.',
+        ),
+      );
     } catch (error) {
       return Left(ModelFailure('the app cannot read the models: $error'));
     }
@@ -75,10 +82,11 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
     List<Crop> crops;
     try {
       crops = await remote.getCrops();
-    } catch (_) {
+    } on ApiException {
       // Offline, or the platform is stopped. The models on disk still run.
       final cached = await files.readAll();
-      return cached.isNotEmpty ? cached : _local.readCatalog();
+      if (cached.isEmpty) throw const _Offline();
+      return cached;
     }
 
     final models = <LeafModel>[];
@@ -88,7 +96,7 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
         if (model != null) models.add(model);
       }
     }
-    return models.isNotEmpty ? models : _local.readCatalog();
+    return models;
   }
 
   /// The current model of [dataset], or the cached one when the download
@@ -119,4 +127,9 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
       return cached;
     }
   }
+}
+
+/// The platform cannot be reached and no model is on disk.
+class _Offline implements Exception {
+  const _Offline();
 }

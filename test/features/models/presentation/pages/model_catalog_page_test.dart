@@ -134,4 +134,46 @@ void main() {
 
     expect(find.text('no asset'), findsOneWidget);
   });
+
+  testWidgets('says when the platform has released no model yet',
+      (tester) async {
+    await pump(
+      tester,
+      state: const ModelCatalogState(status: ModelCatalogStatus.ready),
+    );
+
+    expect(find.text('No models yet'), findsOneWidget);
+    expect(
+      find.text(
+        'No crop has a released model yet. Check again later.',
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('the empty list can be loaded again', (tester) async {
+    await pump(
+      tester,
+      state: const ModelCatalogState(status: ModelCatalogStatus.ready),
+    );
+
+    await tester.tap(find.text('Try again'));
+
+    verify(() => bloc.add(const ModelsRequested())).called(1);
+  });
+
+  testWidgets('a failure with no model can be loaded again', (tester) async {
+    await pump(
+      tester,
+      state: const ModelCatalogState(
+        status: ModelCatalogStatus.failure,
+        message: 'No connection.',
+      ),
+    );
+
+    expect(find.text('No connection.'), findsOneWidget);
+    await tester.tap(find.text('Try again'));
+
+    verify(() => bloc.add(const ModelsRequested())).called(1);
+  });
 }

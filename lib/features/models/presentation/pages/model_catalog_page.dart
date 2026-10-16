@@ -111,18 +111,7 @@ class _Body extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.models.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            state.message ?? 'The app found no model.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppColors.muted),
-          ),
-        ),
-      );
-    }
+    if (state.models.isEmpty) return _NoModel(message: state.message);
 
     return ListView.separated(
       padding: const EdgeInsets.all(16),
@@ -137,6 +126,59 @@ class _Body extends StatelessWidget {
               context.read<ModelCatalogBloc>().add(ModelSelected(model.id)),
         );
       },
+    );
+  }
+}
+
+/// The app ships no model, so before the platform releases one, or offline
+/// with nothing downloaded, the list is empty.
+class _NoModel extends StatelessWidget {
+  const _NoModel({required this.message});
+
+  /// Why the list could not load. Null means the platform has no release.
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.eco_outlined, size: 48, color: AppColors.muted),
+            const SizedBox(height: 12),
+            Text(
+              'No models yet',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message ?? 'No crop has a released model yet. Check again later.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: AppColors.muted,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => context.read<ModelCatalogBloc>().add(
+                const ModelsRequested(),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                minimumSize: const Size(0, 44),
+              ),
+              child: const Text(
+                'Try again',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

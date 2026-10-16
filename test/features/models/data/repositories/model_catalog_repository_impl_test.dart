@@ -73,8 +73,6 @@ void main() {
       remote: remote,
       files: files,
     );
-    when(() => local.readCatalog())
-        .thenAnswer((_) async => [coffeeModel, durianModel]);
     // Before any release the platform lists no crop.
     when(() => remote.getCrops()).thenAnswer((_) async => []);
     when(() => files.readAll()).thenAnswer((_) async => []);
@@ -156,12 +154,12 @@ void main() {
       expect(result.getRight().toNullable(), [_downloaded(2)]);
     });
 
-    test('a dataset with no model and no cache falls back to bundled', () async {
+    test('a dataset with no model and no cache is left out', () async {
       when(() => remote.getDeviceConfig('rocole')).thenAnswer((_) async => null);
 
       final result = await repository.getModels();
 
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
+      expect(result.getRight().toNullable(), isEmpty);
     });
 
     test('the list is read once for getModels and getSelected', () async {
@@ -189,10 +187,10 @@ void main() {
       expect(result.getRight().toNullable(), [_downloaded(2)]);
     });
 
-    test('with nothing on disk lists the bundled models', () async {
+    test('with nothing on disk says the phone is offline', () async {
       final result = await repository.getModels();
 
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
+      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
     });
   });
 
@@ -201,14 +199,14 @@ void main() {
   });
 
   group('getModels', () {
-    test('returns every model of the catalog', () async {
+    test('lists no model before the platform releases one', () async {
       final result = await repository.getModels();
 
-      expect(result.getRight().toNullable(), [coffeeModel, durianModel]);
+      expect(result.getRight().toNullable(), isEmpty);
     });
 
     test('an exception becomes a ModelFailure', () async {
-      when(() => local.readCatalog()).thenThrow(Exception('no asset'));
+      when(() => remote.getCrops()).thenThrow(Exception('bad body'));
 
       final result = await repository.getModels();
 
@@ -217,6 +215,14 @@ void main() {
   });
 
   group('getSelected', () {
+    setUp(() {
+      when(() => remote.getCrops()).thenThrow(
+        const ApiException.offline('no network'),
+      );
+      when(() => files.readAll())
+          .thenAnswer((_) async => [coffeeModel, durianModel]);
+    });
+
     test('returns the stored model', () async {
       when(() => local.readSelectedId()).thenReturn('durian');
 
@@ -239,6 +245,15 @@ void main() {
       final result = await repository.getSelected();
 
       expect(result.getRight().toNullable(), coffeeModel);
+    });
+
+    test('with no model there is nothing to select', () async {
+      when(() => files.readAll()).thenAnswer((_) async => []);
+      when(() => local.readSelectedId()).thenReturn(null);
+
+      final result = await repository.getSelected();
+
+      expect(result.isLeft(), isTrue);
     });
   });
 

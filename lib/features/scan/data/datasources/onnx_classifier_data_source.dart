@@ -62,13 +62,10 @@ class OnnxClassifierDataSourceImpl implements OnnxClassifierDataSource {
     // The CPU gives a repeatable latency on a low performance device. Add
     // CORE_ML or NNAPI only after a measurement shows a benefit.
     final options = OrtSessionOptions(providers: [OrtProvider.CPU]);
-    final file = model.modelFile;
-    final session = file != null
-        ? await _runtime.createSession(file, options: options)
-        : await _runtime.createSessionFromAsset(
-            model.modelAsset!,
-            options: options,
-          );
+    final session = await _runtime.createSession(
+      model.modelFile,
+      options: options,
+    );
     _sessions[key] = session;
     return session;
   }

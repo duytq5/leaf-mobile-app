@@ -51,8 +51,7 @@ void main() {
     expect(saved.displayName, 'Lá cà phê (RoCoLe)');
     expect(saved.dataset, 'Cà phê');
     expect(saved.version, '3');
-    expect(saved.modelAsset, isNull);
-    expect(File(saved.modelFile!).readAsBytesSync(), [1, 2, 3]);
+    expect(File(saved.modelFile).readAsBytesSync(), [1, 2, 3]);
 
     final read = await store.readLatest('rocole');
     expect(read, saved);
