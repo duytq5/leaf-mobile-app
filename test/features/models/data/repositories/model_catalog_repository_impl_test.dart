@@ -315,5 +315,9 @@ void main() {
       expect(coffeeModel.subtitle, 'RoCoLe · fold-1-best · 3 labels');
       expect(durianModel.subtitle, 'Vietnamese durian · fold-3-best · 6 labels');
     });
+
+    test('a released model names its version with a v', () {
+      expect(releasedModel.subtitle, 'Cà phê · v3 · 2 labels');
+    });
   });
 }
