@@ -11,13 +11,9 @@ class LeafModel extends Equatable {
     required this.displayName,
     required this.dataset,
     required this.manifest,
-    this.modelAsset,
-    this.modelFile,
+    required this.modelFile,
     this.datasetName,
-  }) : assert(
-         (modelAsset == null) != (modelFile == null),
-         'a model is either an asset or a file',
-       );
+  });
 
   /// The id in the catalog, for example `coffee_rocole`.
   final String id;
@@ -30,14 +26,10 @@ class LeafModel extends Equatable {
 
   final ModelManifest manifest;
 
-  /// The asset key of the ONNX file of a bundled model.
-  final String? modelAsset;
+  /// The path of the ONNX file the app downloaded from the platform.
+  final String modelFile;
 
-  /// The path of the ONNX file of a model the app downloaded.
-  final String? modelFile;
-
-  /// The platform's dataset name, for example `rocole`. It is null for a
-  /// bundled model, which the platform does not know.
+  /// The platform's dataset name, for example `rocole`.
   final String? datasetName;
 
   /// The version of the weights, for example `fold-1-best`.
@@ -55,15 +47,18 @@ class LeafModel extends Equatable {
   /// released model has a version the platform knows.
   bool get canUpload => datasetName != null && manifest.modelVersionRef != null;
 
-  /// The line under the name of the card.
-  String get subtitle => '$dataset · $version · $labelCount labels';
+  /// The line under the name of the card. A platform release is a number,
+  /// so it reads as `v3`.
+  String get subtitle {
+    final release = int.tryParse(version) != null ? 'v$version' : version;
+    return '$dataset · $release · $labelCount labels';
+  }
 
   @override
   List<Object?> get props => [
     id,
     displayName,
     dataset,
-    modelAsset,
     modelFile,
     version,
     labels,

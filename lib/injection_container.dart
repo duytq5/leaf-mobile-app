@@ -23,8 +23,10 @@ import 'features/models/data/datasources/model_file_store.dart';
 import 'features/models/data/datasources/model_remote_data_source.dart';
 import 'features/models/data/repositories/model_catalog_repository_impl.dart';
 import 'features/models/domain/repositories/model_catalog_repository.dart';
-import 'features/models/domain/usecases/get_models.dart';
-import 'features/models/domain/usecases/get_selected_model.dart';
+import 'features/models/domain/usecases/delete_model.dart';
+import 'features/models/domain/usecases/download_model.dart';
+import 'features/models/domain/usecases/get_catalog.dart';
+import 'features/models/domain/usecases/get_selected_id.dart';
 import 'features/models/domain/usecases/select_model.dart';
 import 'features/models/presentation/bloc/model_catalog_bloc.dart';
 import 'features/outbox/data/datasources/captures_remote_data_source.dart';
@@ -139,8 +141,10 @@ Future<void> initDependencies() async {
   // Use cases
   sl.registerLazySingleton(() => GetConsent(sl()));
   sl.registerLazySingleton(() => SaveConsent(sl()));
-  sl.registerLazySingleton(() => GetModels(sl()));
-  sl.registerLazySingleton(() => GetSelectedModel(sl()));
+  sl.registerLazySingleton(() => GetCatalog(sl()));
+  sl.registerLazySingleton(() => GetSelectedId(sl()));
+  sl.registerLazySingleton(() => DownloadModel(sl()));
+  sl.registerLazySingleton(() => DeleteModel(sl()));
   sl.registerLazySingleton(() => SelectModel(sl()));
   sl.registerLazySingleton(() => SignIn(sl()));
   sl.registerLazySingleton(() => SignOut(sl()));
@@ -156,9 +160,11 @@ Future<void> initDependencies() async {
   sl.registerFactory(() => ConsentBloc(getConsent: sl(), saveConsent: sl()));
   sl.registerFactory(
     () => ModelCatalogBloc(
-      getModels: sl(),
-      getSelectedModel: sl(),
+      getCatalog: sl(),
+      getSelectedId: sl(),
       selectModel: sl(),
+      downloadModel: sl(),
+      deleteModel: sl(),
     ),
   );
   sl.registerFactory(

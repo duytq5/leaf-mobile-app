@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/pages/sign_in_page.dart';
 import 'features/consent/presentation/bloc/consent_bloc.dart';
 import 'features/consent/presentation/pages/consent_page.dart';
 import 'features/models/domain/entities/leaf_model.dart';
@@ -37,8 +38,8 @@ class LeafScanApp extends StatelessWidget {
 
 /// The first screen of the flow.
 ///
-/// The gate reads the stored agreement. An agreed record opens the picker at
-/// once. A clear record shows the agreement screen.
+/// The gate reads the stored agreement. An agreed record goes on to the
+/// sign-in gate at once. A clear record shows the agreement screen.
 class ConsentGate extends StatelessWidget {
   const ConsentGate({super.key});
 
@@ -55,12 +56,10 @@ class ConsentGate extends StatelessWidget {
                 ConsentStatus.loading => const Scaffold(
                   body: Center(child: CircularProgressIndicator()),
                 ),
-                ConsentStatus.accepted => const ModelCatalogRoute(),
+                ConsentStatus.accepted => const SignInGate(),
                 _ => ConsentPage(
                   onAccepted: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const ModelCatalogRoute(),
-                    ),
+                    MaterialPageRoute<void>(builder: (_) => const SignInGate()),
                   ),
                 ),
               };
@@ -68,6 +67,40 @@ class ConsentGate extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// The models open only for a signed-in user.
+///
+/// The gate waits until the outbox has read the stored session, so a signed-in
+/// user never sees the sign-in screen flash by.
+class SignInGate extends StatelessWidget {
+  const SignInGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<OutboxBloc, OutboxState>(
+      listenWhen: (previous, current) =>
+          !current.signedIn &&
+          current.message != null &&
+          previous.message != current.message,
+      listener: (context, state) => ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text(state.message!))),
+      builder: (context, state) {
+        if (!state.ready) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (state.signedIn) return const ModelCatalogRoute();
+        return SignInPage(
+          busy: state.signingIn,
+          onSignIn: () =>
+              context.read<OutboxBloc>().add(const OutboxSignInRequested()),
+        );
+      },
     );
   }
 }

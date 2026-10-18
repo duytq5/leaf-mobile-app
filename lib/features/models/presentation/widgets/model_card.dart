@@ -2,30 +2,56 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
-import '../../domain/entities/leaf_model.dart';
+import '../../domain/entities/catalog_entry.dart';
 
 /// One card of the picker.
 ///
 /// The chips come from `model.labelNames`, which comes from the manifest. A card
-/// never holds a label in its code.
+/// never holds a label in its code. A model that is not on the phone has no
+/// manifest yet, so its card shows the release and a download button.
 class ModelCard extends StatelessWidget {
   const ModelCard({
-    required this.model,
+    required this.entry,
     required this.selected,
     required this.onTap,
+    required this.onDownload,
+    required this.onDelete,
+    this.downloading = false,
+    this.progress,
     super.key,
   });
 
-  final LeafModel model;
+  final CatalogEntry entry;
   final bool selected;
+  final bool downloading;
+
+  /// A fraction from 0 to 1, or null while the size is unknown.
+  final double? progress;
+
   final VoidCallback onTap;
+
+  /// Download, or update to the current release.
+  final VoidCallback onDownload;
+  final VoidCallback onDelete;
+
+  String get _subtitle {
+    final model = entry.installed;
+    if (model != null) return model.subtitle;
+    final release = entry.releasedVersion;
+    return [
+      entry.cropName,
+      if (release != null) 'v$release',
+      'Not downloaded',
+    ].join(' · ');
+  }
 
   @override
   Widget build(BuildContext context) {
+    final model = entry.installed;
     return Semantics(
       button: true,
       selected: selected,
-      label: '${model.displayName}, ${model.subtitle}',
+      label: '${entry.displayName}, $_subtitle',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -50,7 +76,7 @@ class ModelCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          model.displayName,
+                          entry.displayName,
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w600,
@@ -59,7 +85,7 @@ class ModelCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          model.subtitle,
+                          _subtitle,
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.muted,
@@ -68,22 +94,133 @@ class ModelCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _SelectionDot(selected: selected),
+                  if (model != null) ...[
+                    const SizedBox(width: 12),
+                    _SelectionDot(selected: selected),
+                  ],
                 ],
               ),
+              if (model != null) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final label in model.labelNames)
+                      _LabelChip(label: label, highlighted: selected),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final label in model.labelNames)
-                    _LabelChip(label: label, highlighted: selected),
-                ],
-              ),
+              downloading
+                  ? _Progress(progress: progress)
+                  : _Actions(
+                      entry: entry,
+                      onDownload: onDownload,
+                      onDelete: onDelete,
+                    ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Progress extends StatelessWidget {
+  const _Progress({required this.progress});
+
+  final double? progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final share = progress;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: share,
+          color: AppColors.primary,
+          backgroundColor: AppColors.tint,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          share == null
+              ? 'Downloading…'
+              : 'Downloading ${(share * 100).round()}%',
+          style: const TextStyle(fontSize: 13, color: AppColors.muted),
+        ),
+      ],
+    );
+  }
+}
+
+class _Actions extends StatelessWidget {
+  const _Actions({
+    required this.entry,
+    required this.onDownload,
+    required this.onDelete,
+  });
+
+  final CatalogEntry entry;
+  final VoidCallback onDownload;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = entry.status;
+    return Row(
+      children: [
+        if (status == ModelStatus.notDownloaded)
+          _ActionButton(
+            label: 'Download',
+            icon: Icons.download_outlined,
+            onPressed: onDownload,
+            filled: true,
+          ),
+        if (status == ModelStatus.updateAvailable)
+          _ActionButton(
+            label: 'Update to v${entry.releasedVersion}',
+            icon: Icons.system_update_alt,
+            onPressed: onDownload,
+            filled: true,
+          ),
+        const Spacer(),
+        if (status != ModelStatus.notDownloaded)
+          _ActionButton(
+            label: 'Delete',
+            icon: Icons.delete_outline,
+            onPressed: onDelete,
+          ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.filled = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    final colour = filled ? AppColors.primary : AppColors.muted;
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: colour,
+        minimumSize: const Size(0, 44),
+        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       ),
     );
   }

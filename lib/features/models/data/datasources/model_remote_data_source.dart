@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -18,14 +19,18 @@ abstract class ModelRemoteDataSource {
   Future<List<Crop>> getCrops();
 
   /// `GET /v1/devices/config?dataset=`. Returns null when the dataset has no
-  /// released model yet, so the app keeps its bundled model.
+  /// released model yet.
   Future<DeviceConfig?> getDeviceConfig(String dataset);
 
   /// Reads the manifest at a presigned link.
   Future<ModelManifest> getManifest(Uri url);
 
-  /// Reads the bytes at a presigned link.
-  Future<Uint8List> download(Uri url);
+  /// Reads the bytes at a presigned link. [onProgress] gets a fraction from 0
+  /// to 1, or null while the size is unknown.
+  Future<Uint8List> download(
+    Uri url, {
+    void Function(double? progress)? onProgress,
+  });
 }
 
 class ModelRemoteDataSourceImpl implements ModelRemoteDataSource {
@@ -61,11 +66,18 @@ class ModelRemoteDataSourceImpl implements ModelRemoteDataSource {
       ModelManifest.fromPlatformJson(await _getJson(url.toString()));
 
   @override
-  Future<Uint8List> download(Uri url) async {
+  Future<Uint8List> download(
+    Uri url, {
+    void Function(double? progress)? onProgress,
+  }) async {
     try {
       final response = await _dio.getUri<List<int>>(
         url,
         options: Options(responseType: ResponseType.bytes),
+        onReceiveProgress: onProgress == null
+            ? null
+            : (received, total) =>
+                  onProgress(total > 0 ? received / total : null),
       );
       return Uint8List.fromList(response.data ?? const []);
     } on DioException catch (error) {
@@ -78,11 +90,15 @@ class ModelRemoteDataSourceImpl implements ModelRemoteDataSource {
     Map<String, dynamic>? query,
   }) async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        path,
-        queryParameters: query,
-      );
-      return response.data ?? const {};
+      final response = await _dio.get<Object?>(path, queryParameters: query);
+      final data = response.data;
+      // S3 can serve a JSON file as binary/octet-stream, and then Dio hands
+      // over the text unparsed.
+      if (data is String) return jsonDecode(data) as Map<String, dynamic>;
+      if (data is List<int>) {
+        return jsonDecode(utf8.decode(data)) as Map<String, dynamic>;
+      }
+      return (data as Map<String, dynamic>?) ?? const {};
     } on DioException catch (error) {
       throw apiExceptionFrom(error);
     }

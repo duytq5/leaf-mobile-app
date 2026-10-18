@@ -51,8 +51,7 @@ void main() {
     expect(saved.displayName, 'Lá cà phê (RoCoLe)');
     expect(saved.dataset, 'Cà phê');
     expect(saved.version, '3');
-    expect(saved.modelAsset, isNull);
-    expect(File(saved.modelFile!).readAsBytesSync(), [1, 2, 3]);
+    expect(File(saved.modelFile).readAsBytesSync(), [1, 2, 3]);
 
     final read = await store.readLatest('rocole');
     expect(read, saved);
@@ -127,5 +126,21 @@ void main() {
 
     expect(read!.manifest, isA<ModelManifest>());
     expect(read.manifest.released, isTrue);
+  });
+
+  test('delete removes every version of a dataset', () async {
+    await saveVersion(2);
+    await saveVersion(3);
+
+    await store.delete('rocole');
+
+    expect(await store.readLatest('rocole'), isNull);
+    expect(await store.readAll(), isEmpty);
+  });
+
+  test('delete of a dataset that is not on disk does nothing', () async {
+    await store.delete('rocole');
+
+    expect(await store.readAll(), isEmpty);
   });
 }

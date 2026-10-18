@@ -34,7 +34,7 @@ final coffeeModel = LeafModel(
       'coffee___rust',
     ],
   ),
-  modelAsset: 'assets/models/coffee/model.onnx',
+  modelFile: '/models/coffee_rocole/1/model.onnx',
 );
 
 /// The durian model, with 6 classes.
@@ -53,7 +53,7 @@ final durianModel = LeafModel(
       'Leaf_Rhizoctonia',
     ],
   ),
-  modelAsset: 'assets/models/durian/model.onnx',
+  modelFile: '/models/durian/1/model.onnx',
 );
 
 /// A manifest as the platform releases it, with 2 classes.
