@@ -71,4 +71,19 @@ void main() {
     expect(offenders, isEmpty,
         reason: 'a screen reads a colour from AppColors');
   });
+
+  test('a screen reads its words from the translations', () {
+    // A literal sentence in a widget would stay English on a Vietnamese phone.
+    final literal = RegExp(
+      r"""(Text\(|label: |title: |backLabel: |tooltip: )\s*'[A-Za-z]""",
+    );
+    final offenders = _offenders(
+      (path, source) =>
+          (path.contains('/presentation/') || path.contains('core/widgets/')) &&
+          literal.hasMatch(source),
+    );
+
+    expect(offenders, isEmpty,
+        reason: 'a screen reads its text from AppLocalizations');
+  });
 }

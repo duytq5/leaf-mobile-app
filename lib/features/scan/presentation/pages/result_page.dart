@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -41,50 +42,83 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
   bool _expanded = false;
+  final _scroll = ScrollController();
+  final _detailsKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// The panel opens below the fold on a phone, so the list brings it up.
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    if (!_expanded) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final panel = _detailsKey.currentContext;
+      if (panel == null || !panel.mounted) return;
+      Scrollable.ensureVisible(
+        panel,
+        alignment: 1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final result = widget.result;
     return ScreenScaffold(
-      title: 'Result',
+      title: context.l10n.resultTitle,
       onBack: widget.onBack,
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.memory(
-              result.imageBytes,
-              height: 340,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
+      body: Scrollbar(
+        controller: _scroll,
+        thumbVisibility: true,
+        child: ListView(
+          controller: _scroll,
+          padding: const EdgeInsets.all(20),
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.memory(
+                result.imageBytes,
                 height: 340,
-                color: AppColors.imageGround,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.eco_outlined,
-                  size: 64,
-                  color: AppColors.primary,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  height: 340,
+                  color: AppColors.imageGround,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.eco_outlined,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _PredictionCard(
-            result: result,
-            model: widget.model,
-            expanded: _expanded,
-            onToggle: () => setState(() => _expanded = !_expanded),
-          ),
-        ],
+            const SizedBox(height: 16),
+            _PredictionCard(
+              result: result,
+              model: widget.model,
+              expanded: _expanded,
+              detailsKey: _detailsKey,
+              onToggle: _toggle,
+            ),
+          ],
+        ),
       ),
       bottom: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
+            PrimaryButton(
+              label: context.l10n.continueAction,
+              onPressed: widget.onContinue,
+            ),
             if (widget.model.canUpload) ...[
               const SizedBox(height: 10),
               _SendStatus(
@@ -114,19 +148,17 @@ class _SendStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (!signedIn) {
       return SecondaryButton(
-        label: 'Sign in to send this photo',
+        label: l10n.resultSignInToSend,
         icon: Icons.cloud_upload_outlined,
         neutral: true,
         onPressed: onSignIn,
       );
     }
     return Text(
-      pending == 0
-          ? 'Photo sent. Thank you for helping.'
-          : '$pending ${pending == 1 ? 'photo waits' : 'photos wait'}. '
-                'They are sent when the phone is online.',
+      pending == 0 ? l10n.resultSent : l10n.resultPending(pending),
       textAlign: TextAlign.center,
       style: const TextStyle(fontSize: 13, color: AppColors.muted),
     );
@@ -138,16 +170,19 @@ class _PredictionCard extends StatelessWidget {
     required this.result,
     required this.model,
     required this.expanded,
+    required this.detailsKey,
     required this.onToggle,
   });
 
   final ScanResult result;
   final LeafModel model;
   final bool expanded;
+  final Key detailsKey;
   final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final top = result.top;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -159,9 +194,9 @@ class _PredictionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Predicted label',
-            style: TextStyle(
+          Text(
+            l10n.resultPredictedLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppColors.muted,
@@ -196,7 +231,7 @@ class _PredictionCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${model.displayName} model · ${result.modelVersion}',
+            l10n.resultModelLine(model.displayName, result.modelVersion),
             style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           Align(
@@ -209,7 +244,7 @@ class _PredictionCard extends StatelessWidget {
                 foregroundColor: AppColors.primary,
               ),
               child: Text(
-                expanded ? 'Hide all scores' : 'Show all scores',
+                expanded ? l10n.resultHideScores : l10n.resultShowScores,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -217,7 +252,7 @@ class _PredictionCard extends StatelessWidget {
               ),
             ),
           ),
-          if (expanded) _Details(result: result),
+          if (expanded) _Details(key: detailsKey, result: result),
         ],
       ),
     );
@@ -226,7 +261,7 @@ class _PredictionCard extends StatelessWidget {
 
 /// The numbers the thesis report needs.
 class _Details extends StatelessWidget {
-  const _Details({required this.result});
+  const _Details({required this.result, super.key});
 
   final ScanResult result;
 
@@ -264,7 +299,11 @@ class _Details extends StatelessWidget {
             ),
           ),
         const Divider(height: 20),
-        _Metric('latency', '${result.latency.inMilliseconds} ms'),
+        // The acquisition scores keep the names the thesis uses.
+        _Metric(
+          context.l10n.resultLatency,
+          '${result.latency.inMilliseconds} ms',
+        ),
         _Metric('entropy', uncertainty.entropy.toStringAsFixed(4)),
         _Metric(
           'least confidence',

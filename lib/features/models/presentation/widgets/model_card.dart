@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/entities/catalog_entry.dart';
@@ -34,24 +35,33 @@ class ModelCard extends StatelessWidget {
   final VoidCallback onDownload;
   final VoidCallback onDelete;
 
-  String get _subtitle {
+  String _subtitle(BuildContext context) {
+    final l10n = context.l10n;
     final model = entry.installed;
-    if (model != null) return model.subtitle;
+    if (model != null) {
+      final version = model.version;
+      return [
+        model.dataset,
+        int.tryParse(version) != null ? 'v$version' : version,
+        l10n.modelLabelCount(model.labelCount),
+      ].join(' · ');
+    }
     final release = entry.releasedVersion;
     return [
       entry.cropName,
       if (release != null) 'v$release',
-      'Not downloaded',
+      l10n.modelNotDownloaded,
     ].join(' · ');
   }
 
   @override
   Widget build(BuildContext context) {
     final model = entry.installed;
+    final subtitle = _subtitle(context);
     return Semantics(
       button: true,
       selected: selected,
-      label: '${entry.displayName}, $_subtitle',
+      label: '${entry.displayName}, $subtitle',
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.cardRadius),
@@ -85,7 +95,7 @@ class ModelCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _subtitle,
+                          subtitle,
                           style: const TextStyle(
                             fontSize: 13,
                             color: AppColors.muted,
@@ -146,8 +156,8 @@ class _Progress extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           share == null
-              ? 'Downloading…'
-              : 'Downloading ${(share * 100).round()}%',
+              ? context.l10n.modelDownloading
+              : context.l10n.modelDownloadingPercent((share * 100).round()),
           style: const TextStyle(fontSize: 13, color: AppColors.muted),
         ),
       ],
@@ -168,19 +178,20 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final status = entry.status;
     return Row(
       children: [
         if (status == ModelStatus.notDownloaded)
           _ActionButton(
-            label: 'Download',
+            label: l10n.modelDownload,
             icon: Icons.download_outlined,
             onPressed: onDownload,
             filled: true,
           ),
         if (status == ModelStatus.updateAvailable)
           _ActionButton(
-            label: 'Update to v${entry.releasedVersion}',
+            label: l10n.modelUpdateTo('${entry.releasedVersion}'),
             icon: Icons.system_update_alt,
             onPressed: onDownload,
             filled: true,
@@ -188,7 +199,7 @@ class _Actions extends StatelessWidget {
         const Spacer(),
         if (status != ModelStatus.notDownloaded)
           _ActionButton(
-            label: 'Delete',
+            label: l10n.delete,
             icon: Icons.delete_outline,
             onPressed: onDelete,
           ),

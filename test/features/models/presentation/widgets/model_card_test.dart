@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:leaf_disease_mobile/core/theme/app_theme.dart';
 import 'package:leaf_disease_mobile/features/models/domain/entities/catalog_entry.dart';
 import 'package:leaf_disease_mobile/features/models/presentation/widgets/model_card.dart';
+import 'package:leaf_disease_mobile/l10n/generated/app_localizations.dart';
 
 import '../../../../support/model_fixtures.dart';
 
@@ -41,6 +42,7 @@ void main() {
     CatalogEntry? entry,
     bool selected = false,
     bool downloading = false,
+    Locale locale = const Locale('en'),
     double? progress,
     VoidCallback? onTap,
     VoidCallback? onDownload,
@@ -49,6 +51,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SingleChildScrollView(
             child: ModelCard(
@@ -72,6 +77,31 @@ void main() {
 
     expect(find.text('Coffee Leaf'), findsOneWidget);
     expect(find.text('RoCoLe · fold-1-best · 3 labels'), findsOneWidget);
+  });
+
+  testWidgets('a released model names its version with a v', (tester) async {
+    await pump(tester, entry: _outdated);
+
+    expect(find.text('Cà phê · v3 · 2 labels'), findsOneWidget);
+  });
+
+  testWidgets('a Vietnamese phone reads the card in Vietnamese', (
+    tester,
+  ) async {
+    await pump(tester, entry: _outdated, locale: const Locale('vi'));
+
+    expect(find.text('Cà phê · v3 · 2 nhãn'), findsOneWidget);
+    expect(find.text('Cập nhật lên v4'), findsOneWidget);
+    expect(find.text('Xoá'), findsOneWidget);
+  });
+
+  testWidgets('a model that is not on the phone says so in Vietnamese', (
+    tester,
+  ) async {
+    await pump(tester, entry: _missing, locale: const Locale('vi'));
+
+    expect(find.text('Cà phê · v3 · Chưa tải'), findsOneWidget);
+    expect(find.text('Tải về'), findsOneWidget);
   });
 
   testWidgets('shows one chip per label of the model', (tester) async {

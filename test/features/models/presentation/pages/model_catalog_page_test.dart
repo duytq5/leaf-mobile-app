@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:leaf_disease_mobile/core/error/failures.dart';
 import 'package:leaf_disease_mobile/core/theme/app_theme.dart';
 import 'package:leaf_disease_mobile/core/widgets/primary_button.dart';
 import 'package:leaf_disease_mobile/features/models/domain/entities/catalog_entry.dart';
@@ -148,11 +149,19 @@ void main() {
       tester,
       state: const ModelCatalogState(
         status: ModelCatalogStatus.failure,
-        message: 'no asset',
+        failure: ModelFailure(
+          'no asset',
+          code: FailureCode.catalogUnreadable,
+        ),
       ),
     );
 
-    expect(find.text('no asset'), findsOneWidget);
+    // The screen names the problem, not the technical message.
+    expect(find.text('no asset'), findsNothing);
+    expect(
+      find.text('The app cannot read the models. Please try again.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('says when the platform has released no model yet',
@@ -187,11 +196,17 @@ void main() {
       tester,
       state: const ModelCatalogState(
         status: ModelCatalogStatus.failure,
-        message: 'No connection.',
+        failure: NetworkFailure(
+          'offline',
+          code: FailureCode.catalogOffline,
+        ),
       ),
     );
 
-    expect(find.text('No connection.'), findsOneWidget);
+    expect(
+      find.text('No connection. Connect to the internet to download a model.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Try again'));
 
     verify(() => bloc.add(const ModelsRequested())).called(1);
@@ -256,7 +271,12 @@ void main() {
     addTearDown(() => resetPhoneFrame(tester));
     whenListen(
       bloc,
-      Stream.value(ready.copyWith(message: 'The download failed.')),
+      Stream.value(ready.copyWith(
+          failure: NetworkFailure(
+            'expired',
+            code: FailureCode.downloadFailed,
+          ),
+        ),),
       initialState: ready,
     );
     await tester.pumpWidget(
@@ -270,6 +290,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('The download failed.'), findsOneWidget);
+    expect(
+      find.text('The download failed. Please try again.'),
+      findsOneWidget,
+    );
   });
 }

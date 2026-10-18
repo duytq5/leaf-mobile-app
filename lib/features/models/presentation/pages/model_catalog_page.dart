@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
+import '../../../../core/l10n/failure_text.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/leafscan_mark.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -23,14 +26,16 @@ class ModelCatalogPage extends StatelessWidget {
         // An empty list shows its failure in the body, so the snackbar is for
         // the rest: a failed download or delete.
         listenWhen: (previous, current) =>
-            current.message != null &&
+            current.failure != null &&
             current.entries.isNotEmpty &&
-            previous.message != current.message,
+            previous.failure != current.failure,
         listener: (context, state) {
-          if (state.message != null) {
+          if (state.failure != null) {
             ScaffoldMessenger.of(context)
               ..clearSnackBars()
-              ..showSnackBar(SnackBar(content: Text(state.message!)));
+              ..showSnackBar(
+                SnackBar(content: Text(context.l10n.failure(state.failure!))),
+              );
           }
         },
         builder: (context, state) {
@@ -67,7 +72,7 @@ class _Header extends StatelessWidget {
               const LeafScanMark(size: 26, veinColor: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'LeafScan',
+                context.l10n.appTitle,
                 style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -78,19 +83,18 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Choose an AI model',
-            style: TextStyle(
+          Text(
+            context.l10n.catalogTitle,
+            style: const TextStyle(
               fontSize: 26,
               fontWeight: FontWeight.w700,
               color: AppColors.onPrimary,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Each model recognises a different crop. Check its labels before '
-            'scanning.',
-            style: TextStyle(
+          Text(
+            context.l10n.catalogIntro,
+            style: const TextStyle(
               fontSize: 14,
               height: 1.45,
               color: AppColors.onPrimaryMuted,
@@ -114,7 +118,7 @@ class _Body extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (state.entries.isEmpty) return _NoModel(message: state.message);
+    if (state.entries.isEmpty) return _NoModel(failure: state.failure);
 
     final bloc = context.read<ModelCatalogBloc>();
     return ListView.separated(
@@ -143,21 +147,20 @@ class _Body extends StatelessWidget {
 }
 
 Future<bool> _confirmDelete(BuildContext context, String name) async {
+  final l10n = context.l10n;
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text('Delete $name?'),
-      content: const Text(
-        'The model leaves this phone. You can download it again later.',
-      ),
+      title: Text(l10n.catalogDeleteTitle(name)),
+      content: Text(l10n.catalogDeleteBody),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Delete'),
+          child: Text(l10n.delete),
         ),
       ],
     ),
@@ -168,13 +171,15 @@ Future<bool> _confirmDelete(BuildContext context, String name) async {
 /// The app ships no model, so before the platform releases one, or offline
 /// with nothing downloaded, the list is empty.
 class _NoModel extends StatelessWidget {
-  const _NoModel({required this.message});
+  const _NoModel({required this.failure});
 
   /// Why the list could not load. Null means the platform has no release.
-  final String? message;
+  final Failure? failure;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final reason = failure;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -184,12 +189,12 @@ class _NoModel extends StatelessWidget {
             const Icon(Icons.eco_outlined, size: 48, color: AppColors.muted),
             const SizedBox(height: 12),
             Text(
-              'No models yet',
+              l10n.catalogEmptyTitle,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 6),
             Text(
-              message ?? 'No crop has a released model yet. Check again later.',
+              reason == null ? l10n.catalogEmptyBody : l10n.failure(reason),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 14,
@@ -206,9 +211,12 @@ class _NoModel extends StatelessWidget {
                 foregroundColor: AppColors.primary,
                 minimumSize: const Size(0, 44),
               ),
-              child: const Text(
-                'Try again',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              child: Text(
+                l10n.tryAgain,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -226,6 +234,7 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final selected = state.selected;
     return Container(
       color: AppColors.surface,
@@ -234,10 +243,10 @@ class _Footer extends StatelessWidget {
         top: false,
         child: PrimaryButton(
           label: selected != null
-              ? 'Use ${selected.displayName} model'
+              ? l10n.catalogUseModel(selected.displayName)
               : state.entries.isEmpty
-              ? 'Choose a model'
-              : 'Download a model to start',
+              ? l10n.catalogChooseModel
+              : l10n.catalogDownloadToStart,
           onPressed: selected == null ? null : () => onContinue(selected),
         ),
       ),

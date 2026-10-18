@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:leaf_disease_mobile/core/error/failures.dart';
 import 'package:leaf_disease_mobile/core/theme/app_theme.dart';
 import 'package:leaf_disease_mobile/core/widgets/primary_button.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/bloc/consent_bloc.dart';
@@ -46,7 +47,9 @@ void main() {
     expect(find.text('Before you start'), findsOneWidget);
     expect(find.text('Photos are uploaded'), findsOneWidget);
     expect(find.text('Used to train AI'), findsOneWidget);
-    expect(find.text('Your corrections count'), findsOneWidget);
+    expect(find.text('Sent when you are online'), findsOneWidget);
+    // The app has no label report any more.
+    expect(find.textContaining('correction'), findsNothing);
   });
 
   testWidgets('disables the button while the checkbox is clear', (tester) async {
@@ -129,7 +132,10 @@ void main() {
     whenListen(
       bloc,
       Stream.fromIterable(const [
-        ConsentState(status: ConsentStatus.failure, message: 'no store'),
+        ConsentState(
+          status: ConsentStatus.failure,
+          failure: CacheFailure('no store'),
+        ),
       ]),
       initialState: const ConsentState(status: ConsentStatus.ready),
     );
@@ -144,6 +150,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('no store'), findsOneWidget);
+    expect(
+      find.text('The phone could not save or read the data. Please try again.'),
+      findsOneWidget,
+    );
   });
 }

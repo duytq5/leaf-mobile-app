@@ -46,7 +46,8 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
         if (onDisk.isEmpty) {
           return const Left(
             NetworkFailure(
-              'No connection. Connect to the internet to download a model.',
+              'offline with no model on the phone',
+              code: FailureCode.catalogOffline,
             ),
           );
         }
@@ -75,7 +76,12 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
       }
       return Right(entries);
     } catch (error) {
-      return Left(ModelFailure('the app cannot read the models: $error'));
+      return Left(
+        ModelFailure(
+          'the app cannot read the models: $error',
+          code: FailureCode.catalogUnreadable,
+        ),
+      );
     }
   }
 
@@ -86,14 +92,24 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
   }) async {
     final released = _released[id];
     if (released == null) {
-      return const Left(ModelFailure('This model is not released.'));
+      return const Left(
+        ModelFailure(
+          'this model is not released',
+          code: FailureCode.modelNotReleased,
+        ),
+      );
     }
     final (crop, dataset) = released;
 
     try {
       final config = await remote.getDeviceConfig(id);
       if (config == null) {
-        return const Left(ModelFailure('This model is not released.'));
+        return const Left(
+        ModelFailure(
+          'this model is not released',
+          code: FailureCode.modelNotReleased,
+        ),
+      );
       }
       final manifest = await remote.getManifest(config.manifestUrl);
       final bytes = await remote.download(
@@ -103,7 +119,10 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
       if (sha256.convert(bytes).toString() != config.sha256) {
         // A damaged or replaced file never runs.
         return const Left(
-          ModelFailure('The download was damaged. Please try again.'),
+          ModelFailure(
+            'the download does not match its sha256',
+            code: FailureCode.downloadDamaged,
+          ),
         );
       }
       return Right(
@@ -117,13 +136,19 @@ class ModelCatalogRepositoryImpl implements ModelCatalogRepository {
     } on ApiException catch (error) {
       return Left(
         NetworkFailure(
-          error.offline
-              ? 'No connection. The download did not finish.'
-              : 'The download failed: ${error.message}',
+          'the download failed: ${error.message}',
+          code: error.offline
+              ? FailureCode.downloadOffline
+              : FailureCode.downloadFailed,
         ),
       );
     } catch (error) {
-      return Left(ModelFailure('The download failed: $error'));
+      return Left(
+        ModelFailure(
+          'the download failed: $error',
+          code: FailureCode.downloadFailed,
+        ),
+      );
     }
   }
 

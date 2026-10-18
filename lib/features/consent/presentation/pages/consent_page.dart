@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/l10n/failure_text.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/leafscan_mark.dart';
 import '../../../../core/widgets/primary_button.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../bloc/consent_bloc.dart';
 import 'terms_page.dart';
 
@@ -17,22 +20,14 @@ class ConsentPage extends StatelessWidget {
   /// Runs after the app stores the agreement.
   final VoidCallback onAccepted;
 
-  static const _points = <(IconData, String, String)>[
+  static List<(IconData, String, String)> _points(AppLocalizations l10n) => [
     (
       Icons.cloud_upload_outlined,
-      'Photos are uploaded',
-      'Every image you take or choose is uploaded to our server.',
+      l10n.consentUploadTitle,
+      l10n.consentUploadBody,
     ),
-    (
-      Icons.layers_outlined,
-      'Used to train AI',
-      'Images and their labels are used to train and improve the models.',
-    ),
-    (
-      Icons.flag_outlined,
-      'Your corrections count',
-      'When you report a wrong label, your correction is sent too.',
-    ),
+    (Icons.layers_outlined, l10n.consentTrainTitle, l10n.consentTrainBody),
+    (Icons.wifi_outlined, l10n.consentOnlineTitle, l10n.consentOnlineBody),
   ];
 
   @override
@@ -41,10 +36,12 @@ class ConsentPage extends StatelessWidget {
       listenWhen: (previous, current) => previous.status != current.status,
       listener: (context, state) {
         if (state.status == ConsentStatus.accepted) onAccepted();
-        if (state.status == ConsentStatus.failure && state.message != null) {
+        if (state.status == ConsentStatus.failure && state.failure != null) {
           ScaffoldMessenger.of(context)
             ..clearSnackBars()
-            ..showSnackBar(SnackBar(content: Text(state.message!)));
+            ..showSnackBar(
+              SnackBar(content: Text(context.l10n.failure(state.failure!))),
+            );
         }
       },
       builder: (context, state) {
@@ -60,7 +57,7 @@ class ConsentPage extends StatelessWidget {
                     children: [
                       const _Header(),
                       const SizedBox(height: 24),
-                      for (final (icon, title, body) in _points) ...[
+                      for (final (icon, title, body) in _points(context.l10n)) ...[
                         _Point(icon: icon, title: title, body: body),
                         const SizedBox(height: 18),
                       ],
@@ -78,9 +75,9 @@ class ConsentPage extends StatelessWidget {
                             foregroundColor: AppColors.primary,
                             minimumSize: const Size(0, 44),
                           ),
-                          child: const Text(
-                            'Read full terms',
-                            style: TextStyle(
+                          child: Text(
+                            context.l10n.consentReadTerms,
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -109,12 +106,15 @@ class _Header extends StatelessWidget {
       children: [
         const LeafScanTile(),
         const SizedBox(height: 12),
-        Text('Before you start', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          context.l10n.consentTitle,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: 8),
-        const Text(
-          'Please read and agree to how LeafScan uses your photos.',
+        Text(
+          context.l10n.consentIntro,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 15, height: 1.5, color: AppColors.muted),
+          style: const TextStyle(fontSize: 15, height: 1.5, color: AppColors.muted),
         ),
       ],
     );
@@ -201,13 +201,12 @@ class _Agreement extends StatelessWidget {
                         ? null
                         : (value) => bloc.add(ConsentToggled(value ?? false)),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Padding(
-                      padding: EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: 12),
                       child: Text(
-                        'I agree that my images will be uploaded and used for '
-                        'AI training.',
-                        style: TextStyle(
+                        context.l10n.consentCheckbox,
+                        style: const TextStyle(
                           fontSize: 14,
                           height: 1.5,
                           color: AppColors.textStrong,
@@ -221,7 +220,7 @@ class _Agreement extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           PrimaryButton(
-            label: 'Agree & continue',
+            label: context.l10n.consentAgree,
             onPressed: state.checked && !busy
                 ? () => bloc.add(const ConsentAccepted())
                 : null,
@@ -231,9 +230,9 @@ class _Agreement extends StatelessWidget {
             child: TextButton(
               onPressed: busy ? null : () => Navigator.of(context).maybePop(),
               style: TextButton.styleFrom(foregroundColor: AppColors.muted),
-              child: const Text(
-                'Close app',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+              child: Text(
+                context.l10n.consentCloseApp,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
               ),
             ),
           ),

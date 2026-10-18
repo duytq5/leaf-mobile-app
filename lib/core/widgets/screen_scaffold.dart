@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/l10n.dart';
 import '../theme/app_colors.dart';
 
 /// The 64 pixel bar of the design, with a 44 pixel back target.
@@ -11,7 +12,7 @@ class ScreenScaffold extends StatelessWidget {
     required this.title,
     required this.body,
     this.onBack,
-    this.backLabel = 'Back',
+    this.backLabel,
     this.bottom,
     this.background = AppColors.surface,
     super.key,
@@ -23,8 +24,9 @@ class ScreenScaffold extends StatelessWidget {
   /// A null callback hides the back target.
   final VoidCallback? onBack;
 
-  /// The label a screen reader reads for the back target.
-  final String backLabel;
+  /// The label a screen reader reads for the back target. A null label reads
+  /// "Back" in the phone's language.
+  final String? backLabel;
 
   /// The block below the body. It does not scroll.
   final Widget? bottom;
@@ -52,7 +54,7 @@ class ScreenScaffold extends StatelessWidget {
                   if (onBack != null)
                     IconButton(
                       onPressed: onBack,
-                      tooltip: backLabel,
+                      tooltip: backLabel ?? context.l10n.back,
                       icon: const Icon(Icons.chevron_left, size: 24),
                       color: AppColors.text,
                       constraints: const BoxConstraints.tightFor(

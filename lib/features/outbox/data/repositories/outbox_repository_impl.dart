@@ -49,7 +49,12 @@ class OutboxRepositoryImpl implements OutboxRepository {
     try {
       final (bytes, contentType) = _uploadable(result.imageBytes);
       if (bytes.length > maxBytes) {
-        return const Left(ImageFailure('the photo is larger than 10 MB'));
+        return const Left(
+          ImageFailure(
+            'the photo is larger than 10 MB',
+            code: FailureCode.photoTooLarge,
+          ),
+        );
       }
       await local.save(
         PendingCapture(
@@ -109,7 +114,12 @@ class OutboxRepositoryImpl implements OutboxRepository {
           );
         }
         if (status == 401 || status == 403) {
-          return const Left(AuthFailure('sign in again to send photos'));
+          return const Left(
+            AuthFailure(
+              'sign in again to send photos',
+              code: FailureCode.signInExpired,
+            ),
+          );
         }
         if (status == 400 || status == 404 || status == 409) {
           // The platform will never take this body, so it leaves the outbox.

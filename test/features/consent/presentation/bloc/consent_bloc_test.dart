@@ -56,14 +56,17 @@ void main() {
   );
 
   blocTest<ConsentBloc, ConsentState>(
-    'a read failure shows the message',
+    'a read failure shows the failure',
     setUp: () => when(() => getConsent(any()))
         .thenAnswer((_) async => const Left(CacheFailure('no store'))),
     build: build,
     act: (bloc) => bloc.add(const ConsentRequested()),
     expect: () => const [
       ConsentState(status: ConsentStatus.loading),
-      ConsentState(status: ConsentStatus.failure, message: 'no store'),
+      ConsentState(
+        status: ConsentStatus.failure,
+        failure: CacheFailure('no store'),
+      ),
     ],
   );
 
@@ -107,7 +110,7 @@ void main() {
   );
 
   blocTest<ConsentBloc, ConsentState>(
-    'a write failure shows the message',
+    'a write failure shows the failure',
     setUp: () => when(() => saveConsent(any()))
         .thenAnswer((_) async => const Left(CacheFailure('full disk'))),
     build: build,
@@ -118,7 +121,7 @@ void main() {
       ConsentState(
         status: ConsentStatus.failure,
         checked: true,
-        message: 'full disk',
+        failure: CacheFailure('full disk'),
       ),
     ],
   );

@@ -98,14 +98,17 @@ void main() {
   );
 
   blocTest<ModelCatalogBloc, ModelCatalogState>(
-    'a list failure shows the message',
+    'a list failure shows the failure',
     setUp: () => when(() => getCatalog(any()))
         .thenAnswer((_) async => const Left(NetworkFailure('offline'))),
     build: build,
     act: (bloc) => bloc.add(const ModelsRequested()),
     expect: () => const [
       ModelCatalogState(status: ModelCatalogStatus.loading),
-      ModelCatalogState(status: ModelCatalogStatus.failure, message: 'offline'),
+      ModelCatalogState(
+        status: ModelCatalogStatus.failure,
+        failure: NetworkFailure('offline'),
+      ),
     ],
   );
 
@@ -193,7 +196,7 @@ void main() {
       ModelCatalogState(
         status: ModelCatalogStatus.ready,
         entries: [_durianMissing],
-        message: 'link expired',
+        failure: NetworkFailure('link expired'),
       ),
     ],
   );

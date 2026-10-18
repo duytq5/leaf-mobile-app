@@ -165,7 +165,7 @@ void main() {
     act: (bloc) => bloc.add(const OutboxSignInRequested()),
     expect: () => [
       const OutboxState(signingIn: true),
-      const OutboxState(message: 'cancelled'),
+      const OutboxState(failure: AuthFailure('cancelled')),
     ],
   );
 
@@ -181,7 +181,7 @@ void main() {
     act: (bloc) => bloc.add(const OutboxSendRequested()),
     expect: () => [
       const OutboxState(signedIn: true, pending: 1, sending: true),
-      const OutboxState(pending: 1, message: 'sign in again'),
+      const OutboxState(pending: 1, failure: AuthFailure('sign in again')),
     ],
   );
 

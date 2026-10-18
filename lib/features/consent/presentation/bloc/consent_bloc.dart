@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../domain/entities/consent_record.dart';
 import '../../domain/usecases/get_consent.dart';
@@ -39,7 +40,7 @@ class ConsentState extends Equatable {
   const ConsentState({
     this.status = ConsentStatus.initial,
     this.checked = false,
-    this.message,
+    this.failure,
   });
 
   final ConsentStatus status;
@@ -47,22 +48,22 @@ class ConsentState extends Equatable {
   /// The state of the checkbox. The button stays disabled while it is false.
   final bool checked;
 
-  final String? message;
+  final Failure? failure;
 
   ConsentState copyWith({
     ConsentStatus? status,
     bool? checked,
-    String? message,
+    Failure? failure,
   }) {
     return ConsentState(
       status: status ?? this.status,
       checked: checked ?? this.checked,
-      message: message,
+      failure: failure,
     );
   }
 
   @override
-  List<Object?> get props => [status, checked, message];
+  List<Object?> get props => [status, checked, failure];
 }
 
 /// Holds the state of the agreement screen.
@@ -88,7 +89,7 @@ class ConsentBloc extends Bloc<ConsentEvent, ConsentState> {
       result.match(
         (failure) => state.copyWith(
           status: ConsentStatus.failure,
-          message: failure.message,
+          failure: failure,
         ),
         (record) => record.agreed
             ? state.copyWith(status: ConsentStatus.accepted, checked: true)
@@ -118,7 +119,7 @@ class ConsentBloc extends Bloc<ConsentEvent, ConsentState> {
         (failure) => state.copyWith(
           status: ConsentStatus.failure,
           checked: true,
-          message: failure.message,
+          failure: failure,
         ),
         (_) => state.copyWith(status: ConsentStatus.accepted, checked: true),
       ),
