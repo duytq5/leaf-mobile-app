@@ -93,7 +93,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<BrowserAuthDataSource>(
     BrowserAuthDataSourceImpl.new,
   );
-  sl.registerLazySingleton<TokenStore>(TokenStoreImpl.new);
+  sl.registerLazySingleton<TokenStore>(() => TokenStoreImpl(sl()));
   sl.registerLazySingleton<OutboxLocalDataSource>(OutboxLocalDataSourceImpl.new);
   sl.registerLazySingleton<CapturesRemoteDataSource>(
     () => CapturesRemoteDataSourceImpl(sl()),

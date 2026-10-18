@@ -101,8 +101,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  /// A stored session counts only while it can still give a token. A refused
+  /// refresh clears it, so the app asks for sign-in again. Offline, the stored
+  /// session still counts.
   @override
-  Future<bool> isSignedIn() async => await store.read() != null;
+  Future<bool> isSignedIn() async {
+    if (await store.read() == null) return false;
+    final token = await accessToken();
+    return token.match((failure) => failure is NetworkFailure, (_) => true);
+  }
 
   @override
   Future<Either<Failure, Unit>> signOut() async {
