@@ -61,8 +61,7 @@ void main() {
     expect(find.text('coffee___healthy'), findsNothing);
   });
 
-  testWidgets('shows every score and every metric when opened',
-      (tester) async {
+  testWidgets('shows every score and every metric when opened', (tester) async {
     await pump(tester);
 
     await tester.tap(find.text('Show all scores'));
@@ -76,6 +75,29 @@ void main() {
     expect(find.text('margin'), findsOneWidget);
     expect(find.text('142 ms'), findsOneWidget);
     expect(find.text('Hide all scores'), findsOneWidget);
+  });
+
+  testWidgets('opening the scores scrolls them into view', (tester) async {
+    // On a phone the panel opens below the fold, behind the Continue block.
+    await pump(tester, model: releasedModel);
+
+    await tester.tap(find.text('Show all scores'));
+    await tester.pumpAndSettle();
+
+    final list = tester.getRect(find.byType(ListView));
+    expect(
+      tester.getRect(find.text('margin')).bottom,
+      lessThanOrEqualTo(list.bottom),
+    );
+  });
+
+  testWidgets('shows a scroll bar so the user sees there is more', (
+    tester,
+  ) async {
+    await pump(tester);
+
+    final bar = tester.widget<Scrollbar>(find.byType(Scrollbar));
+    expect(bar.thumbVisibility, isTrue);
   });
 
   testWidgets('shows the labels of the model that ran', (tester) async {
@@ -111,8 +133,9 @@ void main() {
       expect(find.text('Sign in to send this photo'), findsNothing);
     });
 
-    testWidgets('a released model asks a signed-out user to sign in',
-        (tester) async {
+    testWidgets('a released model asks a signed-out user to sign in', (
+      tester,
+    ) async {
       var taps = 0;
       await pump(tester, model: releasedModel, onSignIn: () => taps++);
 
@@ -131,8 +154,9 @@ void main() {
       );
     });
 
-    testWidgets('a signed-in user with nothing waiting is thanked',
-        (tester) async {
+    testWidgets('a signed-in user with nothing waiting is thanked', (
+      tester,
+    ) async {
       await pump(tester, model: releasedModel, signedIn: true);
 
       expect(find.text('Photo sent. Thank you for helping.'), findsOneWidget);
