@@ -46,7 +46,9 @@ void main() {
     expect(find.text('Before you start'), findsOneWidget);
     expect(find.text('Photos are uploaded'), findsOneWidget);
     expect(find.text('Used to train AI'), findsOneWidget);
-    expect(find.text('Your corrections count'), findsOneWidget);
+    expect(find.text('Sent when you are online'), findsOneWidget);
+    // The app has no label report any more.
+    expect(find.textContaining('correction'), findsNothing);
   });
 
   testWidgets('disables the button while the checkbox is clear', (tester) async {

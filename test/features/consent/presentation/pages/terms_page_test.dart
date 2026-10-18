@@ -33,4 +33,12 @@ void main() {
     final last = find.textContaining('Close the app to stop');
     expect(tester.getRect(last).bottom, lessThanOrEqualTo(list.bottom));
   });
+
+  testWidgets('says when a photo is sent, with no label report',
+      (tester) async {
+    await pump(tester);
+
+    expect(find.text('When the app sends a photo'), findsOneWidget);
+    expect(find.textContaining('correction'), findsNothing);
+  });
 }

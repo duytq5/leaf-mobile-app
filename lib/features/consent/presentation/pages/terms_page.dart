@@ -32,9 +32,9 @@ class _TermsPageState extends State<TermsPage> {
           'field is more useful than a photo from a laboratory.',
     ),
     (
-      'What a correction does',
-      'When you report a wrong label, the app sends your correction. A correction '
-          'is a label from a person. It improves the model more than a photo alone.',
+      'When the app sends a photo',
+      'The app keeps each photo and its prediction on the phone. It sends them '
+          'when you are signed in and the phone is online.',
     ),
     (
       'What the app does not collect',
