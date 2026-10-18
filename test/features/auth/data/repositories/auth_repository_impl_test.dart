@@ -87,7 +87,8 @@ void main() {
       expect(result.isRight(), isTrue);
       verify(() => browser.authenticate(any(), 'leafal')).called(1);
       final saved =
-          verify(() => store.write(captureAny())).captured.single as StoredSession;
+          verify(() => store.write(captureAny())).captured.single
+              as StoredSession;
       expect(saved.accessToken, 'at');
       expect(saved.refreshToken, 'rt');
       expect(saved.expiresAt, _now.add(const Duration(hours: 1)));
@@ -171,7 +172,8 @@ void main() {
 
       expect(result.getRight().toNullable(), 'new');
       final saved =
-          verify(() => store.write(captureAny())).captured.single as StoredSession;
+          verify(() => store.write(captureAny())).captured.single
+              as StoredSession;
       expect(saved.refreshToken, 'rt');
     });
 
@@ -218,14 +220,56 @@ void main() {
     verify(() => store.clear()).called(1);
   });
 
-  test('isSignedIn reads the store', () async {
-    when(() => store.read()).thenAnswer((_) async => null);
-    expect(await repository.isSignedIn(), isFalse);
-
-    when(() => store.read()).thenAnswer(
-      (_) async =>
-          StoredSession(accessToken: 'a', refreshToken: 'r', expiresAt: _now),
+  group('isSignedIn', () {
+    StoredSession session(DateTime expiresAt) => StoredSession(
+      accessToken: 'a',
+      refreshToken: 'rt',
+      expiresAt: expiresAt,
     );
-    expect(await repository.isSignedIn(), isTrue);
+
+    test('no stored session is signed out', () async {
+      when(() => store.read()).thenAnswer((_) async => null);
+
+      expect(await repository.isSignedIn(), isFalse);
+    });
+
+    test('a live token is signed in without a refresh', () async {
+      when(() => store.read())
+          .thenAnswer((_) async => session(_now.add(const Duration(hours: 1))));
+
+      expect(await repository.isSignedIn(), isTrue);
+      verifyNever(() => cognito.refresh(any()));
+    });
+
+    test('an expired token that refreshes is signed in', () async {
+      when(() => store.read()).thenAnswer((_) async => session(_now));
+      when(() => cognito.refresh('rt')).thenAnswer(
+        (_) async => const TokenResponse(
+          accessToken: 'new',
+          expiresIn: Duration(hours: 1),
+        ),
+      );
+
+      expect(await repository.isSignedIn(), isTrue);
+    });
+
+    test('a refused refresh is signed out, so the app asks again', () async {
+      when(() => store.read()).thenAnswer((_) async => session(_now));
+      when(() => cognito.refresh('rt')).thenThrow(
+        const ApiException(status: 400, code: 'invalid_grant', message: 'no'),
+      );
+
+      expect(await repository.isSignedIn(), isFalse);
+      verify(() => store.clear()).called(1);
+    });
+
+    test('offline keeps the stored session signed in', () async {
+      when(() => store.read()).thenAnswer((_) async => session(_now));
+      when(() => cognito.refresh('rt'))
+          .thenThrow(const ApiException.offline('no network'));
+
+      expect(await repository.isSignedIn(), isTrue);
+      verifyNever(() => store.clear());
+    });
   });
 }
