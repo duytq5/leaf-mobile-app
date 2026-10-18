@@ -4,8 +4,21 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/screen_scaffold.dart';
 
 /// Artboard `0b · Full terms`.
-class TermsPage extends StatelessWidget {
+class TermsPage extends StatefulWidget {
   const TermsPage({super.key});
+
+  @override
+  State<TermsPage> createState() => _TermsPageState();
+}
+
+class _TermsPageState extends State<TermsPage> {
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   static const _sections = <(String, String)>[
     (
@@ -19,9 +32,9 @@ class TermsPage extends StatelessWidget {
           'field is more useful than a photo from a laboratory.',
     ),
     (
-      'What a correction does',
-      'When you report a wrong label, the app sends your correction. A correction '
-          'is a label from a person. It improves the model more than a photo alone.',
+      'When the app sends a photo',
+      'The app keeps each photo and its prediction on the phone. It sends them '
+          'when you are signed in and the phone is online.',
     ),
     (
       'What the app does not collect',
@@ -46,35 +59,40 @@ class TermsPage extends StatelessWidget {
       title: 'Full terms',
       onBack: () => Navigator.of(context).pop(),
       backLabel: 'Back to the agreement',
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-        itemCount: _sections.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 22),
-        itemBuilder: (context, index) {
-          final (heading, body) = _sections[index];
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                heading,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text,
+      body: Scrollbar(
+        controller: _scroll,
+        thumbVisibility: true,
+        child: ListView.separated(
+          controller: _scroll,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          itemCount: _sections.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 22),
+          itemBuilder: (context, index) {
+            final (heading, body) = _sections[index];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  heading,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                body,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.55,
-                  color: AppColors.muted,
+                const SizedBox(height: 6),
+                Text(
+                  body,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.55,
+                    color: AppColors.muted,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

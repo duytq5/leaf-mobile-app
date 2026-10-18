@@ -41,6 +41,30 @@ class ResultPage extends StatefulWidget {
 
 class _ResultPageState extends State<ResultPage> {
   bool _expanded = false;
+  final _scroll = ScrollController();
+  final _detailsKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// The panel opens below the fold on a phone, so the list brings it up.
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    if (!_expanded) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final panel = _detailsKey.currentContext;
+      if (panel == null || !panel.mounted) return;
+      Scrollable.ensureVisible(
+        panel,
+        alignment: 1,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,36 +72,42 @@ class _ResultPageState extends State<ResultPage> {
     return ScreenScaffold(
       title: 'Result',
       onBack: widget.onBack,
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.memory(
-              result.imageBytes,
-              height: 340,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
+      body: Scrollbar(
+        controller: _scroll,
+        thumbVisibility: true,
+        child: ListView(
+          controller: _scroll,
+          padding: const EdgeInsets.all(20),
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.memory(
+                result.imageBytes,
                 height: 340,
-                color: AppColors.imageGround,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.eco_outlined,
-                  size: 64,
-                  color: AppColors.primary,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Container(
+                  height: 340,
+                  color: AppColors.imageGround,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.eco_outlined,
+                    size: 64,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _PredictionCard(
-            result: result,
-            model: widget.model,
-            expanded: _expanded,
-            onToggle: () => setState(() => _expanded = !_expanded),
-          ),
-        ],
+            const SizedBox(height: 16),
+            _PredictionCard(
+              result: result,
+              model: widget.model,
+              expanded: _expanded,
+              detailsKey: _detailsKey,
+              onToggle: _toggle,
+            ),
+          ],
+        ),
       ),
       bottom: Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
@@ -138,12 +168,14 @@ class _PredictionCard extends StatelessWidget {
     required this.result,
     required this.model,
     required this.expanded,
+    required this.detailsKey,
     required this.onToggle,
   });
 
   final ScanResult result;
   final LeafModel model;
   final bool expanded;
+  final Key detailsKey;
   final VoidCallback onToggle;
 
   @override
@@ -217,7 +249,7 @@ class _PredictionCard extends StatelessWidget {
               ),
             ),
           ),
-          if (expanded) _Details(result: result),
+          if (expanded) _Details(key: detailsKey, result: result),
         ],
       ),
     );
@@ -226,7 +258,7 @@ class _PredictionCard extends StatelessWidget {
 
 /// The numbers the thesis report needs.
 class _Details extends StatelessWidget {
-  const _Details({required this.result});
+  const _Details({required this.result, super.key});
 
   final ScanResult result;
 

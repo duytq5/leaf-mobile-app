@@ -29,9 +29,9 @@ class ConsentPage extends StatelessWidget {
       'Images and their labels are used to train and improve the models.',
     ),
     (
-      Icons.flag_outlined,
-      'Your corrections count',
-      'When you report a wrong label, your correction is sent too.',
+      Icons.wifi_outlined,
+      'Sent when you are online',
+      'Each photo and its prediction wait on the phone until it is online.',
     ),
   ];
 
