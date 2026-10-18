@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../../core/usecase/usecase.dart';
 import '../../domain/entities/catalog_entry.dart';
 import '../../domain/entities/leaf_model.dart';
@@ -61,7 +62,7 @@ class ModelCatalogState extends Equatable {
     this.entries = const [],
     this.selectedId,
     this.progress = const {},
-    this.message,
+    this.failure,
   });
 
   final ModelCatalogStatus status;
@@ -72,8 +73,8 @@ class ModelCatalogState extends Equatable {
   /// 1, or null while the size is unknown.
   final Map<String, double?> progress;
 
-  /// A sentence for a snackbar. Every new state clears it.
-  final String? message;
+  /// What a snackbar reports. Every new state clears it.
+  final Failure? failure;
 
   /// The selected downloaded model, else the first downloaded one, else null.
   LeafModel? get selected {
@@ -94,19 +95,19 @@ class ModelCatalogState extends Equatable {
     List<CatalogEntry>? entries,
     String? Function()? selectedId,
     Map<String, double?>? progress,
-    String? message,
+    Failure? failure,
   }) {
     return ModelCatalogState(
       status: status ?? this.status,
       entries: entries ?? this.entries,
       selectedId: selectedId != null ? selectedId() : this.selectedId,
       progress: progress ?? this.progress,
-      message: message,
+      failure: failure,
     );
   }
 
   @override
-  List<Object?> get props => [status, entries, selectedId, progress, message];
+  List<Object?> get props => [status, entries, selectedId, progress, failure];
 }
 
 /// Holds the state of the model list: what the platform released, what is on
@@ -143,7 +144,7 @@ class ModelCatalogBloc extends Bloc<ModelCatalogEvent, ModelCatalogState> {
         state.copyWith(
           status: ModelCatalogStatus.failure,
           entries: const [],
-          message: entries.getLeft().toNullable()!.message,
+          failure: entries.getLeft().toNullable(),
         ),
       );
       return;
@@ -169,7 +170,7 @@ class ModelCatalogBloc extends Bloc<ModelCatalogEvent, ModelCatalogState> {
     emit(state.copyWith(selectedId: () => event.id));
     final result = await selectModel(event.id);
     if (result.isLeft()) {
-      emit(state.copyWith(message: result.getLeft().toNullable()!.message));
+      emit(state.copyWith(failure: result.getLeft().toNullable()));
     }
   }
 
@@ -194,7 +195,7 @@ class ModelCatalogBloc extends Bloc<ModelCatalogEvent, ModelCatalogState> {
     final progress = {...state.progress}..remove(id);
     await result.match(
       (failure) async => emit(
-        state.copyWith(progress: progress, message: failure.message),
+        state.copyWith(progress: progress, failure: failure),
       ),
       (model) async {
         // The first model the user downloads is the one they want to use.
@@ -221,7 +222,7 @@ class ModelCatalogBloc extends Bloc<ModelCatalogEvent, ModelCatalogState> {
     final id = event.id;
     final result = await deleteModel(id);
     if (result.isLeft()) {
-      emit(state.copyWith(message: result.getLeft().toNullable()!.message));
+      emit(state.copyWith(failure: result.getLeft().toNullable()));
       return;
     }
 

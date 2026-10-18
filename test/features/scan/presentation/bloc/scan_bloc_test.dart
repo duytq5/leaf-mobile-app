@@ -84,7 +84,10 @@ void main() {
     expect: () => const [
       ScanState(status: ScanStatus.picking),
       ScanState(status: ScanStatus.running),
-      ScanState(status: ScanStatus.failure, message: 'no session'),
+      ScanState(
+        status: ScanStatus.failure,
+        failure: ModelFailure('no session'),
+      ),
     ],
   );
 

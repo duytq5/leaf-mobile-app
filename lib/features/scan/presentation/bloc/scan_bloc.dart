@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/error/failures.dart';
 import '../../../models/domain/entities/leaf_model.dart';
 import '../../domain/entities/image_source_kind.dart';
 import '../../domain/entities/scan_result.dart';
@@ -33,16 +34,16 @@ class ScanCleared extends ScanEvent {
 enum ScanStatus { idle, picking, running, done, failure }
 
 class ScanState extends Equatable {
-  const ScanState({this.status = ScanStatus.idle, this.result, this.message});
+  const ScanState({this.status = ScanStatus.idle, this.result, this.failure});
 
   final ScanStatus status;
   final ScanResult? result;
-  final String? message;
+  final Failure? failure;
 
   bool get busy => status == ScanStatus.picking || status == ScanStatus.running;
 
   @override
-  List<Object?> get props => [status, result, message];
+  List<Object?> get props => [status, result, failure];
 }
 
 /// Holds the state of one scan.
@@ -82,7 +83,7 @@ class ScanBloc extends Bloc<ScanEvent, ScanState> {
     emit(
       classified.match(
         (failure) =>
-            ScanState(status: ScanStatus.failure, message: failure.message),
+            ScanState(status: ScanStatus.failure, failure: failure),
         (result) => ScanState(status: ScanStatus.done, result: result),
       ),
     );

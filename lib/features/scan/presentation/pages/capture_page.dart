@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/l10n/failure_text.dart';
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../../core/widgets/screen_scaffold.dart';
@@ -33,21 +35,24 @@ class CapturePage extends StatelessWidget {
         if (state.status == ScanStatus.done && state.result != null) {
           onResult(state.result!);
         }
-        if (state.status == ScanStatus.failure && state.message != null) {
+        if (state.status == ScanStatus.failure && state.failure != null) {
           ScaffoldMessenger.of(context)
             ..clearSnackBars()
-            ..showSnackBar(SnackBar(content: Text(state.message!)));
+            ..showSnackBar(
+              SnackBar(content: Text(context.l10n.failure(state.failure!))),
+            );
         }
       },
       builder: (context, state) {
+        final l10n = context.l10n;
         final bloc = context.read<ScanBloc>();
         void scan(ImageSourceKind source) =>
             bloc.add(ScanImageRequested(source: source, model: model));
 
         return ScreenScaffold(
-          title: 'New scan',
+          title: l10n.captureTitle,
           onBack: state.busy ? null : onBack,
-          backLabel: 'Back to models',
+          backLabel: l10n.captureBack,
           body: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -58,14 +63,14 @@ class CapturePage extends StatelessWidget {
                 Expanded(child: _DropArea(busy: state.busy)),
                 const SizedBox(height: 16),
                 PrimaryButton(
-                  label: 'Take photo',
+                  label: l10n.captureTakePhoto,
                   icon: Icons.photo_camera_outlined,
                   onPressed:
                       state.busy ? null : () => scan(ImageSourceKind.camera),
                 ),
                 const SizedBox(height: 10),
                 SecondaryButton(
-                  label: 'Choose from library',
+                  label: l10n.captureChooseFromLibrary,
                   icon: Icons.photo_library_outlined,
                   onPressed:
                       state.busy ? null : () => scan(ImageSourceKind.gallery),
@@ -121,6 +126,7 @@ class _DropArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DashedBorder(
       child: Container(
         width: double.infinity,
@@ -135,9 +141,9 @@ class _DropArea extends StatelessWidget {
             if (busy) ...[
               const CircularProgressIndicator(),
               const SizedBox(height: 14),
-              const Text(
-                'The model is running.',
-                style: TextStyle(fontSize: 15, color: AppColors.muted),
+              Text(
+                l10n.captureRunning,
+                style: const TextStyle(fontSize: 15, color: AppColors.muted),
               ),
             ] else ...[
               Container(
@@ -155,22 +161,21 @@ class _DropArea extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text(
-                'Add a photo of one leaf',
-                style: TextStyle(
+              Text(
+                l10n.captureHeading,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
                   color: AppColors.text,
                 ),
               ),
               const SizedBox(height: 8),
-              const SizedBox(
+              SizedBox(
                 width: 260,
                 child: Text(
-                  'Use daylight and a plain background. Let the leaf fill most '
-                  'of the frame.',
+                  l10n.captureHint,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.5,
                     color: AppColors.muted,

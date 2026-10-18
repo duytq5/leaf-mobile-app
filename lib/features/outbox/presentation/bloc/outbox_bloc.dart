@@ -51,7 +51,7 @@ class OutboxState extends Equatable {
     this.signingIn = false,
     this.pending = 0,
     this.sending = false,
-    this.message,
+    this.failure,
   });
 
   /// The stored session has been read, so [signedIn] can be trusted.
@@ -65,7 +65,7 @@ class OutboxState extends Equatable {
   /// The scans that wait on this phone.
   final int pending;
   final bool sending;
-  final String? message;
+  final Failure? failure;
 
   OutboxState copyWith({
     bool? ready,
@@ -73,14 +73,14 @@ class OutboxState extends Equatable {
     bool? signingIn,
     int? pending,
     bool? sending,
-    String? message,
+    Failure? failure,
   }) => OutboxState(
     ready: ready ?? this.ready,
     signedIn: signedIn ?? this.signedIn,
     signingIn: signingIn ?? this.signingIn,
     pending: pending ?? this.pending,
     sending: sending ?? this.sending,
-    message: message,
+    failure: failure,
   );
 
   @override
@@ -90,7 +90,7 @@ class OutboxState extends Equatable {
     signingIn,
     pending,
     sending,
-    message,
+    failure,
   ];
 }
 
@@ -165,7 +165,7 @@ class OutboxBloc extends Bloc<OutboxEvent, OutboxState> {
       emit(
         state.copyWith(
           signingIn: false,
-          message: result.getLeft().toNullable()!.message,
+          failure: result.getLeft().toNullable(),
         ),
       );
       return;
@@ -186,7 +186,7 @@ class OutboxBloc extends Bloc<OutboxEvent, OutboxState> {
           signedIn: failure is AuthFailure ? false : null,
           pending: pending,
           sending: false,
-          message: failure.message,
+          failure: failure,
         ),
       ),
       (_) => emit(state.copyWith(pending: pending, sending: false)),

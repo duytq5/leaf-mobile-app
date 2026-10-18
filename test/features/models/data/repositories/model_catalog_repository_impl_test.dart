@@ -173,7 +173,10 @@ void main() {
 
       final result = await repository.getCatalog();
 
-      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<NetworkFailure>().having((f) => f.code, 'code', FailureCode.catalogOffline),
+      );
     });
 
     test('an unexpected error becomes a ModelFailure', () async {
@@ -181,7 +184,10 @@ void main() {
 
       final result = await repository.getCatalog();
 
-      expect(result.getLeft().toNullable(), isA<ModelFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<ModelFailure>().having((f) => f.code, 'code', FailureCode.catalogUnreadable),
+      );
     });
   });
 
@@ -225,7 +231,10 @@ void main() {
 
       final result = await repository.download('rocole');
 
-      expect(result.getLeft().toNullable(), isA<ModelFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<ModelFailure>().having((f) => f.code, 'code', FailureCode.downloadDamaged),
+      );
       verifyNever(
         () => files.save(
           crop: any(named: 'crop'),
@@ -243,7 +252,10 @@ void main() {
 
       final result = await repository.download('rocole');
 
-      expect(result.getLeft().toNullable(), isA<NetworkFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<NetworkFailure>().having((f) => f.code, 'code', FailureCode.downloadFailed),
+      );
     });
 
     test('a dataset with no release cannot be downloaded', () async {
@@ -251,13 +263,19 @@ void main() {
 
       final result = await repository.download('rocole');
 
-      expect(result.getLeft().toNullable(), isA<ModelFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<ModelFailure>().having((f) => f.code, 'code', FailureCode.modelNotReleased),
+      );
     });
 
     test('a dataset the list does not hold cannot be downloaded', () async {
       final result = await repository.download('durian');
 
-      expect(result.getLeft().toNullable(), isA<ModelFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<ModelFailure>().having((f) => f.code, 'code', FailureCode.modelNotReleased),
+      );
     });
   });
 
@@ -309,15 +327,6 @@ void main() {
     test('reads the labels from its manifest', () {
       expect(coffeeModel.labelCount, 3);
       expect(durianModel.labelCount, 6);
-    });
-
-    test('builds the subtitle of the card from the manifest', () {
-      expect(coffeeModel.subtitle, 'RoCoLe · fold-1-best · 3 labels');
-      expect(durianModel.subtitle, 'Vietnamese durian · fold-3-best · 6 labels');
-    });
-
-    test('a released model names its version with a v', () {
-      expect(releasedModel.subtitle, 'Cà phê · v3 · 2 labels');
     });
   });
 }

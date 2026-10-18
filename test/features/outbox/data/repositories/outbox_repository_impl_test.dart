@@ -231,7 +231,10 @@ void main() {
 
       final result = await repository.send();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInExpired),
+      );
       verifyNever(() => local.delete(any()));
     });
 

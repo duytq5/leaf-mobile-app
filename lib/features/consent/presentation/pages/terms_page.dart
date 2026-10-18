@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/screen_scaffold.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 
 /// Artboard `0b · Full terms`.
 class TermsPage extends StatefulWidget {
@@ -20,55 +22,33 @@ class _TermsPageState extends State<TermsPage> {
     super.dispose();
   }
 
-  static const _sections = <(String, String)>[
-    (
-      'What the app uploads',
-      'The app uploads every photo you take or choose. The app also uploads the '
-          'prediction of the model and a score that says how certain the model is.',
-    ),
-    (
-      'Why the app uploads a photo',
-      'The photos build the training set of the next model. A photo from a real '
-          'field is more useful than a photo from a laboratory.',
-    ),
-    (
-      'When the app sends a photo',
-      'The app keeps each photo and its prediction on the phone. It sends them '
-          'when you are signed in and the phone is online.',
-    ),
-    (
-      'What the app does not collect',
-      'The app does not ask for your name, your email address or your telephone '
-          'number. The app does not read your contacts and does not track your position.',
-    ),
-    (
-      'How long the data stays',
-      'The photos stay for the length of the research project. The research team '
-          'holds them. The team does not sell them and does not give them to an '
-          'advertiser.',
-    ),
-    (
-      'How to stop',
-      'Close the app to stop. The app uploads nothing before you agree.',
-    ),
+  static List<(String, String)> _sections(AppLocalizations l10n) => [
+    (l10n.termsUploadsHeading, l10n.termsUploadsBody),
+    (l10n.termsWhyHeading, l10n.termsWhyBody),
+    (l10n.termsWhenHeading, l10n.termsWhenBody),
+    (l10n.termsNotCollectedHeading, l10n.termsNotCollectedBody),
+    (l10n.termsRetentionHeading, l10n.termsRetentionBody),
+    (l10n.termsStopHeading, l10n.termsStopBody),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final sections = _sections(l10n);
     return ScreenScaffold(
-      title: 'Full terms',
+      title: l10n.termsTitle,
       onBack: () => Navigator.of(context).pop(),
-      backLabel: 'Back to the agreement',
+      backLabel: l10n.termsBack,
       body: Scrollbar(
         controller: _scroll,
         thumbVisibility: true,
         child: ListView.separated(
           controller: _scroll,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-          itemCount: _sections.length,
+          itemCount: sections.length,
           separatorBuilder: (_, _) => const SizedBox(height: 22),
           itemBuilder: (context, index) {
-            final (heading, body) = _sections[index];
+            final (heading, body) = sections[index];
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

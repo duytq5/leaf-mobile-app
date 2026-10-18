@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:leaf_disease_mobile/core/error/failures.dart';
 import 'package:leaf_disease_mobile/core/theme/app_theme.dart';
 import 'package:leaf_disease_mobile/core/widgets/primary_button.dart';
 import 'package:leaf_disease_mobile/features/consent/presentation/bloc/consent_bloc.dart';
@@ -131,7 +132,10 @@ void main() {
     whenListen(
       bloc,
       Stream.fromIterable(const [
-        ConsentState(status: ConsentStatus.failure, message: 'no store'),
+        ConsentState(
+          status: ConsentStatus.failure,
+          failure: CacheFailure('no store'),
+        ),
       ]),
       initialState: const ConsentState(status: ConsentStatus.ready),
     );
@@ -146,6 +150,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('no store'), findsOneWidget);
+    expect(
+      find.text('The phone could not save or read the data. Please try again.'),
+      findsOneWidget,
+    );
   });
 }

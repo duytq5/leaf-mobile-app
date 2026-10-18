@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/l10n/failure_text.dart';
+import 'core/l10n/l10n.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/pages/sign_in_page.dart';
 import 'features/consent/presentation/bloc/consent_bloc.dart';
@@ -14,6 +16,7 @@ import 'features/scan/presentation/bloc/scan_bloc.dart';
 import 'features/scan/presentation/pages/capture_page.dart';
 import 'features/scan/presentation/pages/result_page.dart';
 import 'injection_container.dart';
+import 'l10n/generated/app_localizations.dart';
 
 /// The root widget of the app.
 class LeafScanApp extends StatelessWidget {
@@ -27,8 +30,12 @@ class LeafScanApp extends StatelessWidget {
       lazy: false,
       create: (_) => sl<OutboxBloc>()..add(const OutboxStarted()),
       child: MaterialApp(
-        title: 'LeafScan',
+        onGenerateTitle: (context) => context.l10n.appTitle,
         debugShowCheckedModeBanner: false,
+        // The app follows the phone's language. English comes first, so a
+        // language the app does not know falls back to English.
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         theme: AppTheme.light(),
         home: const ConsentGate(),
       ),
@@ -83,11 +90,9 @@ class SignInGate extends StatelessWidget {
     return BlocConsumer<OutboxBloc, OutboxState>(
       listenWhen: (previous, current) =>
           !current.signedIn &&
-          current.message != null &&
-          previous.message != current.message,
-      listener: (context, state) => ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(state.message!))),
+          current.failure != null &&
+          previous.failure != current.failure,
+      listener: _showFailure,
       builder: (context, state) {
         if (!state.ready) {
           return const Scaffold(
@@ -168,10 +173,8 @@ class ResultRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<OutboxBloc, OutboxState>(
       listenWhen: (previous, current) =>
-          current.message != null && previous.message != current.message,
-      listener: (context, state) => ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(state.message!))),
+          current.failure != null && previous.failure != current.failure,
+      listener: _showFailure,
       builder: (context, state) => ResultPage(
         result: result,
         model: model,
@@ -184,4 +187,12 @@ class ResultRoute extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showFailure(BuildContext context, OutboxState state) {
+  ScaffoldMessenger.of(context)
+    ..clearSnackBars()
+    ..showSnackBar(
+      SnackBar(content: Text(context.l10n.failure(state.failure!))),
+    );
 }

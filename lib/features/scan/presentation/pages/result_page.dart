@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/l10n/l10n.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/widgets/primary_button.dart';
@@ -70,7 +71,7 @@ class _ResultPageState extends State<ResultPage> {
   Widget build(BuildContext context) {
     final result = widget.result;
     return ScreenScaffold(
-      title: 'Result',
+      title: context.l10n.resultTitle,
       onBack: widget.onBack,
       body: Scrollbar(
         controller: _scroll,
@@ -114,7 +115,10 @@ class _ResultPageState extends State<ResultPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            PrimaryButton(label: 'Continue', onPressed: widget.onContinue),
+            PrimaryButton(
+              label: context.l10n.continueAction,
+              onPressed: widget.onContinue,
+            ),
             if (widget.model.canUpload) ...[
               const SizedBox(height: 10),
               _SendStatus(
@@ -144,19 +148,17 @@ class _SendStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     if (!signedIn) {
       return SecondaryButton(
-        label: 'Sign in to send this photo',
+        label: l10n.resultSignInToSend,
         icon: Icons.cloud_upload_outlined,
         neutral: true,
         onPressed: onSignIn,
       );
     }
     return Text(
-      pending == 0
-          ? 'Photo sent. Thank you for helping.'
-          : '$pending ${pending == 1 ? 'photo waits' : 'photos wait'}. '
-                'They are sent when the phone is online.',
+      pending == 0 ? l10n.resultSent : l10n.resultPending(pending),
       textAlign: TextAlign.center,
       style: const TextStyle(fontSize: 13, color: AppColors.muted),
     );
@@ -180,6 +182,7 @@ class _PredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final top = result.top;
     return Container(
       padding: const EdgeInsets.all(18),
@@ -191,9 +194,9 @@ class _PredictionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Predicted label',
-            style: TextStyle(
+          Text(
+            l10n.resultPredictedLabel,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: AppColors.muted,
@@ -228,7 +231,7 @@ class _PredictionCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '${model.displayName} model · ${result.modelVersion}',
+            l10n.resultModelLine(model.displayName, result.modelVersion),
             style: const TextStyle(fontSize: 13, color: AppColors.muted),
           ),
           Align(
@@ -241,7 +244,7 @@ class _PredictionCard extends StatelessWidget {
                 foregroundColor: AppColors.primary,
               ),
               child: Text(
-                expanded ? 'Hide all scores' : 'Show all scores',
+                expanded ? l10n.resultHideScores : l10n.resultShowScores,
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -296,7 +299,11 @@ class _Details extends StatelessWidget {
             ),
           ),
         const Divider(height: 20),
-        _Metric('latency', '${result.latency.inMilliseconds} ms'),
+        // The acquisition scores keep the names the thesis uses.
+        _Metric(
+          context.l10n.resultLatency,
+          '${result.latency.inMilliseconds} ms',
+        ),
         _Metric('entropy', uncertainty.entropy.toStringAsFixed(4)),
         _Metric(
           'least confidence',

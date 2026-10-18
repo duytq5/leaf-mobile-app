@@ -47,13 +47,6 @@ class LeafModel extends Equatable {
   /// released model has a version the platform knows.
   bool get canUpload => datasetName != null && manifest.modelVersionRef != null;
 
-  /// The line under the name of the card. A platform release is a number,
-  /// so it reads as `v3`.
-  String get subtitle {
-    final release = int.tryParse(version) != null ? 'v$version' : version;
-    return '$dataset · $release · $labelCount labels';
-  }
-
   @override
   List<Object?> get props => [
     id,

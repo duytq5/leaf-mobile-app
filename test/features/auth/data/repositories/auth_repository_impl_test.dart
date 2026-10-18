@@ -99,7 +99,10 @@ void main() {
 
       final result = await repository.signIn();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInUnfinished),
+      );
       verifyNever(
         () => cognito.exchangeCode(
           code: any(named: 'code'),
@@ -114,7 +117,10 @@ void main() {
 
       final result = await repository.signIn();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInCancelled),
+      );
     });
 
     test('a build without a client id cannot sign in', () async {
@@ -126,7 +132,10 @@ void main() {
         ),
       ).signIn();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInNotSetUp),
+      );
       verifyNever(() => browser.authenticate(any(), any()));
     });
   });
@@ -137,7 +146,10 @@ void main() {
 
       final result = await repository.accessToken();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInNeeded),
+      );
     });
 
     test('a token with time left is returned as it is', () async {
@@ -191,7 +203,10 @@ void main() {
 
       final result = await repository.accessToken();
 
-      expect(result.getLeft().toNullable(), isA<AuthFailure>());
+      expect(
+        result.getLeft().toNullable(),
+        isA<AuthFailure>().having((f) => f.code, 'code', FailureCode.signInExpired),
+      );
       verify(() => store.clear()).called(1);
     });
 

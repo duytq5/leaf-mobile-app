@@ -29,7 +29,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Either<Failure, Unit>> signIn() async {
     if (!settings.configured) {
-      return const Left(AuthFailure('sign-in is not set up in this build'));
+      return const Left(
+        AuthFailure(
+          'sign-in is not set up in this build',
+          code: FailureCode.signInNotSetUp,
+        ),
+      );
     }
 
     final pkce = Pkce.generate();
@@ -41,12 +46,22 @@ class AuthRepositoryImpl implements AuthRepository {
         settings.callbackScheme,
       );
     } catch (_) {
-      return const Left(AuthFailure('the sign-in was cancelled'));
+      return const Left(
+        AuthFailure(
+          'the sign-in was cancelled',
+          code: FailureCode.signInCancelled,
+        ),
+      );
     }
 
     final code = callback.queryParameters['code'];
     if (callback.queryParameters['state'] != state || code == null) {
-      return const Left(AuthFailure('the sign-in did not finish'));
+      return const Left(
+        AuthFailure(
+          'the sign-in did not finish',
+          code: FailureCode.signInUnfinished,
+        ),
+      );
     }
 
     try {
@@ -66,7 +81,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(
         error.offline
             ? NetworkFailure(error.message)
-            : AuthFailure(error.message),
+            : AuthFailure(error.message, code: FailureCode.signInRefused),
       );
     }
   }
@@ -75,7 +90,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, String>> accessToken() async {
     final session = await store.read();
     if (session == null) {
-      return const Left(AuthFailure('sign in to send photos'));
+      return const Left(
+        AuthFailure('sign in to send photos', code: FailureCode.signInNeeded),
+      );
     }
     if (session.expiresAt.isAfter(_clock().add(refreshMargin))) {
       return Right(session.accessToken);
@@ -97,7 +114,12 @@ class AuthRepositoryImpl implements AuthRepository {
       }
       // The refresh token expired or the user was disabled.
       await store.clear();
-      return const Left(AuthFailure('sign in again to send photos'));
+      return const Left(
+        AuthFailure(
+          'sign in again to send photos',
+          code: FailureCode.signInExpired,
+        ),
+      );
     }
   }
 
